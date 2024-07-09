@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "*.tal": "uxntal",
+        "stat.h": "c",
+        "types.h": "c",
+        "user.h": "c"
+    },
+    "files.exclude": {
+        "**/*.asm": true,
+        "**/*.d": true,
+        "**/*.sym": true
+    }
+}

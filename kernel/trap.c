@@ -37,7 +37,8 @@ void
 usertrap(void)
 {
   int which_dev = 0;
-
+  if(r_scause() == 0x18)
+    printf("Usertrap with scause=%p\n", r_scause());
   if((r_sstatus() & SSTATUS_SPP) != 0)
     panic("usertrap: not from user mode");
 
@@ -134,13 +135,18 @@ usertrapret(void)
 void 
 kerneltrap()
 {
+  //printf("Kerneltrap with scause=%p\n", r_scause());
+
   int which_dev = 0;
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
-  
-  if((sstatus & SSTATUS_SPP) == 0)
+  if(scause == (uint64)0x18) 
+    printf("Kerneltrap with scause=0x%x\n",scause);
+  if((sstatus & SSTATUS_SPP) == 0) {
+    printf("Kerneltrap with scause=0x%x\n",scause);
     panic("kerneltrap: not from supervisor mode");
+  }
   if(intr_get() != 0)
     panic("kerneltrap: interrupts enabled");
 

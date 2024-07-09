@@ -49,6 +49,8 @@ TOOLPREFIX := $(shell if riscv64-unknown-elf-objdump -i 2>&1 | grep 'elf64-big' 
 endif
 
 QEMU = qemu-system-riscv64
+#QEMU = /home/max/code/ba/bin/qemu-system-riscv64-tlb_exc
+
 
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
@@ -132,6 +134,9 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
+	$U/_illegal_instr\
+	$U/_tlb_exc\
+
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
@@ -153,13 +158,17 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 	then echo "-gdb tcp::$(GDBPORT)"; \
 	else echo "-s -p $(GDBPORT)"; fi)
 ifndef CPUS
-CPUS := 3
+CPUS := 3	
 endif
 
-QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 128M -smp $(CPUS) -nographic
+QEMUOPTS = 	-d mmu -D ./logs.txt 
+QEMUOPTS += -machine virt -bios none -kernel $K/kernel -m 128M -smp $(CPUS) 
 QEMUOPTS += -global virtio-mmio.force-legacy=false
+#QEMUOPTS += -drive file=fs2.img,if=none,format=raw,id=x0
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+QEMUOPTS += -nographic
+
 
 qemu: $K/kernel fs.img
 	$(QEMU) $(QEMUOPTS)
@@ -167,7 +176,16 @@ qemu: $K/kernel fs.img
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
+# run with qemu debugger enabled to debug the user mode
 qemu-gdb: $K/kernel .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
-	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB) 
+
+# directly debug the qemu binary
+gdb-qemu: $K/kernel fs.img
+	gdb -n --args $(QEMU) $(QEMUOPTS)
+
+
+gdb-qemu-gdb: $K/kernel .gdbinit fs.img
+	gdb -n --args $(QEMU) $(QEMUOPTS) -S $(QEMUGDB) 
 

@@ -1,0 +1,57 @@
+GNU gdb (GDB; openSUSE Tumbleweed) 14.2
+Copyright (C) 2023 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-suse-linux".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://bugs.opensuse.org/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from qemu-system-riscv64...
+(gdb) b riscv_cpu_tlb_fill 
+Breakpoint 1 at 0x6fe9a6: file ../target/riscv/cpu_helper.c, line 1502.
+(gdb) run
+Starting program: /home/max/code/ba/qemu/build/qemu-system-riscv64 -d mmu -D ./logs.txt -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0 -nographic
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <https://debuginfod.opensuse.org/>
+Enable debuginfod for this session? (y or [n]) y
+Debuginfod has been enabled.
+To make this setting permanent, add 'set debuginfod enabled on' to .gdbinit.
+Downloading separate debug info for system-supplied DSO at 0x7ffff7fc5000...
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib64/libthread_db.so.1".
+[New Thread 0x7ffff72006c0 (LWP 220553)]
+[New Thread 0x7ffff66006c0 (LWP 220554)]
+[New Thread 0x7ffff5c006c0 (LWP 220555)]
+[New Thread 0x7ffff52006c0 (LWP 220556)]
+[New Thread 0x7fff65a006c0 (LWP 220557)]
+[Switching to Thread 0x7ffff52006c0 (LWP 220556)]
+
+Thread 5 "qemu-system-ris" hit Breakpoint 1, riscv_cpu_tlb_fill (cs=0x555556a69de0, address=4096, size=1, access_type=MMU_INST_FETCH, mmu_idx=3, probe=false, retaddr=0)
+    at ../target/riscv/cpu_helper.c:1502
+1502	{
+(gdb) ste[K[K[Kset scheduler-locking-[K on
+(gdb) l
+1497	}
+1498	// modhere
+1499	bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
+1500	                        MMUAccessType access_type, int mmu_idx,
+1501	                        bool probe, uintptr_t retaddr)
+1502	{
+1503	    RISCVCPU *cpu = RISCV_CPU(cs);
+1504	    CPURISCVState *env = &cpu->env;
+1505	    vaddr im_address;
+1506	    hwaddr pa = 0;
+(gdb) quti[K[Kit
+A debugging session is active.
+
+	Inferior 1 [process 220524] will be killed.
+
+Quit anyway? (y or n) y
