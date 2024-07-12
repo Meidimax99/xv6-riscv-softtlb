@@ -9,6 +9,7 @@ struct sleeplock;
 struct stat;
 struct superblock;
 
+#include "types.h"
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -184,6 +185,9 @@ void            plic_complete(int);
 void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
+
+// tlb_manager.c
+void tlb_handle_miss(vaddr addr);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

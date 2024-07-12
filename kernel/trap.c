@@ -29,16 +29,34 @@ trapinithart(void)
   w_stvec((uint64)kernelvec);
 }
 
+/* Exception causes */
+//Stolen from Qemu  /target/riscv/cpu_bits.h
+typedef enum RISCVException {
+    NONE = -1, /* sentinel value */
+    INST_ADDR_MIS = 0x0,
+    INST_ACCESS_FAULT = 0x1,
+    ILLEGAL_INST = 0x2,
+    BREAKPOINT = 0x3,
+    LOAD_ADDR_MIS = 0x4,
+    LOAD_ACCESS_FAULT = 0x5,
+    STORE_AMO_ADDR_MIS = 0x6,
+    STORE_AMO_ACCESS_FAULT = 0x7,
+    U_ECALL = 0x8,
+    S_ECALL = 0x9,
+    INST_PAGE_FAULT = 0xc, /* since: priv-1.10.0 */
+    LOAD_PAGE_FAULT = 0xd, /* since: priv-1.10.0 */
+    STORE_PAGE_FAULT = 0xf, /* since: priv-1.10.0 */
+    TLB_MISS = 0x18
+} Exception;
+
 //
 // handle an interrupt, exception, or system call from user space.
 // called from trampoline.S
 //
-void
-usertrap(void)
+void usertrap(void)
 {
+  uint64 scause = r_scause();
   int which_dev = 0;
-  if(r_scause() == 0x18)
-    printf("Usertrap with scause=%p\n", r_scause());
   if((r_sstatus() & SSTATUS_SPP) != 0)
     panic("usertrap: not from user mode");
 
@@ -50,28 +68,48 @@ usertrap(void)
   
   // save user program counter.
   p->trapframe->epc = r_sepc();
-  
-  if(r_scause() == 8){
-    // system call
+  //TODO interrupt handling
+  switch (scause) {
+    case U_ECALL: 
+        // system call
+        if(killed(p))
+          exit(-1);
 
-    if(killed(p))
-      exit(-1);
+        // sepc points to the ecall instruction,
+        // but we want to return to the next instruction.
+        p->trapframe->epc += 4;
 
-    // sepc points to the ecall instruction,
-    // but we want to return to the next instruction.
-    p->trapframe->epc += 4;
+        // an interrupt will change sepc, scause, and sstatus,
+        // so enable only now that we're done with those registers.
+        intr_on();
 
-    // an interrupt will change sepc, scause, and sstatus,
-    // so enable only now that we're done with those registers.
-    intr_on();
-
-    syscall();
-  } else if((which_dev = devintr()) != 0){
-    // ok
-  } else {
-    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
-    printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
-    setkilled(p);
+        syscall();
+        break;
+    case TLB_MISS:
+        tlb_handle_miss(r_stval());
+        setkilled(p);
+        break;
+    case INST_ADDR_MIS:
+    case INST_ACCESS_FAULT: 
+    case ILLEGAL_INST: 
+    case BREAKPOINT: 
+    case LOAD_ADDR_MIS: 
+    case LOAD_ACCESS_FAULT: 
+    case STORE_AMO_ADDR_MIS: 
+    case STORE_AMO_ACCESS_FAULT: 
+    case S_ECALL: 
+    case INST_PAGE_FAULT: 
+    case LOAD_PAGE_FAULT: 
+    case STORE_PAGE_FAULT: 
+    default:
+        if((which_dev = devintr()) != 0){
+          // ok
+        } else {
+          printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+          printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+          setkilled(p);
+        }
+        break;
   }
 
   if(killed(p))
@@ -135,7 +173,6 @@ usertrapret(void)
 void 
 kerneltrap()
 {
-  //printf("Kerneltrap with scause=%p\n", r_scause());
 
   int which_dev = 0;
   uint64 sepc = r_sepc();

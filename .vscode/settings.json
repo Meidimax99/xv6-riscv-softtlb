@@ -3,7 +3,9 @@
         "*.tal": "uxntal",
         "stat.h": "c",
         "types.h": "c",
-        "user.h": "c"
+        "user.h": "c",
+        "defs.h": "c",
+        "syscall.h": "c"
     },
     "files.exclude": {
         "**/*.asm": true,
