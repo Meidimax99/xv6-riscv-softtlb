@@ -34,7 +34,9 @@ start()
   w_satp(0);
 
   // delegate all interrupts and exceptions to supervisor mode.
+  //w_medeleg(((uint64)0-1) /*& ~(1ull << 0x18ull)*/);
   w_medeleg(((uint64)0-1) & ~(1ull << 0x18ull));
+
   w_mideleg(0xffff);
   w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
 
@@ -79,7 +81,10 @@ timerinit()
   w_mscratch((uint64)scratch);
 
   // set the machine-mode trap handler.
-  w_mtvec((uint64)timervec);
+  //modhere mtvec with vectorization
+  w_mtvec((uint64)timervec | 0x1);
+  //w_mtvec((uint64)timervec);
+
 
   // enable machine-mode interrupts.
   w_mstatus(r_mstatus() | MSTATUS_MIE);

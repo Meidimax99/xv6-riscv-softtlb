@@ -352,8 +352,8 @@ typedef uint64 *pagetable_t; // 512 PTEs
 #define PGSIZE 4096 // bytes per page
 #define PGSHIFT 12  // bits of offset within a page
 
-#define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
-#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
+#define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1)) //Returns the next page-aligned boundary after the given address
+#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1)) // Returns the next page-aligned boundary before the given address
 
 #define PTE_V (1L << 0) // valid
 #define PTE_R (1L << 1)

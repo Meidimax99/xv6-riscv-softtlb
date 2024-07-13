@@ -88,19 +88,30 @@ kernelvec:
         sret
 
 
-
-.globl m_exc_vec
-.align 4
-
-m_exc_vec:
-
-        
+ 
         #
         # machine-mode timer interrupt.
         #
 .globl timervec
+.globl timervecactual
 .align 4
+
 timervec:
+        nop
+        nop 
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+timervecactual:
         # start.c has set up the memory that mscratch points to:
         # scratch[0,8,16] : register save area.
         # scratch[24] : address of CLINT's MTIMECMP register.
