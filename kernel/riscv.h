@@ -241,6 +241,23 @@ r_stval()
   return x;
 }
 
+// Machine Mode Trap Cause
+static inline uint64
+r_mcause()
+{
+  uint64 x;
+  asm volatile("csrr %0, mcause" : "=r" (x) );
+  return x;
+}
+
+// Machine Mode Trap Value
+static inline uint64
+r_mtval()
+{
+  uint64 x;
+  asm volatile("csrr %0, mtval" : "=r" (x) );
+  return x;
+}
 // Machine-mode Counter-Enable
 static inline void 
 w_mcounteren(uint64 x)

@@ -87,6 +87,14 @@ kernelvec:
         # return to whatever we were doing in the kernel.
         sret
 
+
+
+.globl m_exc_vec
+.align 4
+
+m_exc_vec:
+
+        
         #
         # machine-mode timer interrupt.
         #

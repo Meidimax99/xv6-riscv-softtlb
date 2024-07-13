@@ -34,8 +34,8 @@ void
 freerange(void *pa_start, void *pa_end)
 {
   char *p;
-  p = (char*)PGROUNDUP((uint64)pa_start);
-  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
+  p = (char*)PGROUNDUP((uint64)pa_start); //Dynamic kernel size possible!
+  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE) //TODO Should the condition not be < instead of <= ?
     kfree(p);
 }
 
@@ -47,7 +47,10 @@ void
 kfree(void *pa)
 {
   struct run *r;
-
+  //Panic if:
+  //pa is not page aligned
+  //pa is in the kernel or below it
+  //pa is bigger or equal to the last address in main mem
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
 
@@ -76,7 +79,8 @@ kalloc(void)
     kmem.freelist = r->next;
   release(&kmem.lock);
 
-  if(r)
-    memset((char*)r, 5, PGSIZE); // fill with junk
+  //modhere Dont fill with junk
+  // if(r)
+  //   memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
 }

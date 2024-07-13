@@ -178,8 +178,6 @@ kerneltrap()
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
-  if(scause == (uint64)0x18) 
-    printf("Kerneltrap with scause=0x%x\n",scause);
   if((sstatus & SSTATUS_SPP) == 0) {
     printf("Kerneltrap with scause=0x%x\n",scause);
     panic("kerneltrap: not from supervisor mode");
