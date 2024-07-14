@@ -45,7 +45,7 @@ main()
   scheduler();        
 }
 
-
+//TODO necessary?
 #ifndef maxvadef
 #define maxvadef
 unsigned long int maxva_const = MAXVA;
