@@ -187,7 +187,7 @@ void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
 
 // tlb_manager.c
-void tlb_handle_miss(vaddr addr);
+void tlb_handle_miss(vaddr addr, uint64 usatp);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

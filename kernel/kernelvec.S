@@ -207,6 +207,9 @@ default_exception_handler:
 
         # TODO Pass args to fx
 
+        csrr a0, mtval
+        csrr a1, satp
+
         call tlb_handle_miss # can this function be found? 
 
 

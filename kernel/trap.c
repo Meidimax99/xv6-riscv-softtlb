@@ -86,7 +86,8 @@ void usertrap(void)
         syscall();
         break;
     case TLB_MISS:
-        tlb_handle_miss(r_stval());
+      //todo tlb miss is handled in machine mode, remove
+        //tlb_handle_miss(r_stval());
         setkilled(p);
         break;
     case INST_ADDR_MIS:
