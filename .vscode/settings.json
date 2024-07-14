@@ -8,7 +8,6 @@
         "syscall.h": "c"
     },
     "files.exclude": {
-        "**/*.asm": true,
         "**/*.d": true,
         "**/*.sym": true
     }

@@ -90,28 +90,42 @@ kernelvec:
 
  
         #
-        # machine-mode timer interrupt.
+        # machine-mode interrupt vector table
         #
+
+.global mtvec_vector_table
+
 .globl timervec
-.globl timervecactual
-.align 4
+.align 4 # TOOD necessary?
+
+.global default_exception_handler
+.global default_vector_handler
+mtvec_vector_table: 
+IRQ_0:
+        j default_exception_handler
+        nop
+IRQ_1:
+        j default_vector_handler
+        nop
+IRQ_2:
+        j default_vector_handler
+        nop
+IRQ_3:
+        j default_vector_handler
+        nop
+IRQ_4:
+        j default_vector_handler
+        nop
+IRQ_5:
+        j default_vector_handler
+        nop
+IRQ_6:
+        j default_vector_handler
+        nop
+IRQ_7:  # timer handler
+        j timervec
 
 timervec:
-        nop
-        nop 
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-timervecactual:
         # start.c has set up the memory that mscratch points to:
         # scratch[0,8,16] : register save area.
         # scratch[24] : address of CLINT's MTIMECMP register.
@@ -141,3 +155,9 @@ timervecactual:
         csrrw a0, mscratch, a0
 
         mret
+
+default_vector_handler:
+        nop
+
+default_exception_handler:
+        nop

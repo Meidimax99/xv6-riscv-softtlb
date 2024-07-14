@@ -13,8 +13,8 @@ __attribute__ ((aligned (16))) char stack0[4096 * NCPU];
 // a scratch area per CPU for machine-mode timer interrupts.
 uint64 timer_scratch[NCPU][5];
 
-// assembly code in kernelvec.S for machine-mode timer interrupt.
-extern void timervec();
+// address to interrupt vector table in kernelvec.S.
+extern void mtvec_vector_table();
 
 // entry.S jumps here in machine mode on stack0.
 void
@@ -82,7 +82,7 @@ timerinit()
 
   // set the machine-mode trap handler.
   //modhere mtvec with vectorization
-  w_mtvec((uint64)timervec | 0x1);
+  w_mtvec((uint64)mtvec_vector_table | 0x1);
   //w_mtvec((uint64)timervec);
 
 
