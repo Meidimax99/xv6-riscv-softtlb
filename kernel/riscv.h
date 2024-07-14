@@ -336,6 +336,20 @@ r_ra()
   return x;
 }
 
+
+//modhere functions for tlb csr access
+static inline void 
+w_tlbh(uint64 x)
+{
+  asm volatile("csrw 0x0BEE, %0" : : "r" (x));
+}
+static inline void 
+w_tlbl(uint64 x)
+{
+  asm volatile("csrw 0x0BFF, %0" : : "r" (x));
+}
+
+
 // flush the TLB.
 static inline void
 sfence_vma()
