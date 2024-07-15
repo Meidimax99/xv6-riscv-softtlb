@@ -261,3 +261,42 @@ devintr()
   }
 }
 
+
+void machine_default_exception_handler() {
+  switch (r_mcause()) {
+    case NONE:
+        break;
+    case INST_ADDR_MIS:
+        break;
+    case INST_ACCESS_FAULT:
+        break;
+    case ILLEGAL_INST:
+        break;
+    case BREAKPOINT:
+        break;
+    case LOAD_ADDR_MIS:
+        break;
+    case LOAD_ACCESS_FAULT:
+        break;
+    case STORE_AMO_ADDR_MIS:
+        break;
+    case STORE_AMO_ACCESS_FAULT:
+        break;
+    case U_ECALL:
+        break;
+    case S_ECALL:
+        break;
+    case INST_PAGE_FAULT:
+        break;
+    case LOAD_PAGE_FAULT:
+        break;
+    case STORE_PAGE_FAULT:
+        break;
+    case TLB_MISS:
+        tlb_handle_miss(r_mtval(), r_satp());
+        break;
+    default:
+        break;
+}
+
+}

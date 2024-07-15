@@ -27,7 +27,7 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
-  freerange(end, (void*)PHYSTOP);
+  freerange(end, (void*)(PHYSTOP-0x1000)); //TODO undo change -> just for testing
 }
 
 void
