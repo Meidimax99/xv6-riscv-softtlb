@@ -168,7 +168,7 @@ QEMUOPTS += -global virtio-mmio.force-legacy=false
 #QEMUOPTS += -drive file=fs2.img,if=none,format=raw,id=x0
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
 QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
-QEMUOPTS += -nographic
+QEMUOPTS += -nographic -monitor telnet::45454,server,nowait
 
 
 qemu: $K/kernel fs.img
