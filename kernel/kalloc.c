@@ -23,11 +23,25 @@ struct {
   struct run *freelist;
 } kmem;
 
+void*
+memsetStr(void *dst, char *str, uint strlen, uint n)
+{
+
+  char *cdst = (char *) dst;
+  uint i;
+  for(i = 0; i < n; i++){
+    cdst[i] = str[i % strlen];
+  }
+  return dst;
+}
+
 void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
   freerange(end, (void*)(PHYSTOP-0x1000)); //TODO undo change -> just for testing
+  uint32 beef= 0xDEADBEEF;
+  memsetStr((char*)0x84fff000, (char*) &beef, 4, PGSIZE); // fill with junk
 }
 
 void
