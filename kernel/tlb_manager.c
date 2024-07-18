@@ -3,10 +3,8 @@
 #include "riscv.h"
 
 void tlb_handle_miss(uint64 addr, uint64 usatp) {
-  uint64 mcause = r_mcause();
-  (void)mcause;
+  //uint64 *paddr = kalloc();
   w_tlbh(addr);
-  w_tlbl(addr);
-  
+  w_tlbl((uint64)addr);
   return;
 }
