@@ -41,7 +41,7 @@ kinit()
   initlock(&kmem.lock, "kmem");
   freerange(end, (void*)(PHYSTOP-0x1000)); //TODO undo change -> just for testing
   uint32 beef= 0xDEADBEEF;
-  memsetStr((char*)0x84fff000, (char*) &beef, 4, PGSIZE); // fill with junk
+  memsetStr((char*)0x85000000, (char*) &beef, 4, PGSIZE); // fill with junk
 }
 
 void

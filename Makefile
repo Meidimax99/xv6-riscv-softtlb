@@ -50,7 +50,7 @@ TOOLPREFIX := $(shell if riscv64-unknown-elf-objdump -i 2>&1 | grep 'elf64-big' 
 endif
 
 QEMU = qemu-system-riscv64
-#QEMU = /home/max/code/ba/bin/qemu-system-riscv64-tlb_exc
+#QEMU = /home/max/code/ba/bin/qemu-system-riscv64-WTF
 
 
 CC = $(TOOLPREFIX)gcc
@@ -159,7 +159,7 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 	then echo "-gdb tcp::$(GDBPORT)"; \
 	else echo "-s -p $(GDBPORT)"; fi)
 ifndef CPUS
-CPUS := 3	
+CPUS := 1	
 endif
 
 QEMUOPTS = 	-d mmu -D ./logs.txt 
