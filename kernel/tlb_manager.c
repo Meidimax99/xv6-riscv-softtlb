@@ -4,9 +4,9 @@
 
 
 void tlb_handle_miss(uint64 addr, uint64 satp) {
-  w_tp(r_mhartid()); //fix problems with locks based on cpuid()
+  //w_tp(r_mhartid()); //fix problems with locks based on cpuid()
   //struct proc *p = myproc();
-  printf("Enter tlb miss handler!\n");
+  //printf("Enter tlb miss handler!\n");
   //pagetable_t pt =  MAKE_PT(satp);
   //TODO should the tlb miss handler be able to allocate? Probably not -> Page Handlers job
   //pte_t *pte = walk(pt, addr, 0);
