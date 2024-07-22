@@ -201,6 +201,10 @@ w_pmpaddr0(uint64 x)
 
 #define MAKE_SATP(pagetable) (SATP_SV39 | (((uint64)pagetable) >> 12))
 
+#define SATP_MODE_BITS (0xfull << 60)
+
+#define MAKE_PT(satp) ((pagetable_t) (satp << 12))
+
 // supervisor address translation and protection;
 // holds the address of the page table.
 static inline void 
