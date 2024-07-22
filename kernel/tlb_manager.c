@@ -2,9 +2,15 @@
 #include "types.h"
 #include "riscv.h"
 
-void tlb_handle_miss(uint64 addr, uint64 usatp) {
-  //uint64 *paddr = kalloc();
+
+void tlb_handle_miss(uint64 addr, uint64 satp) {
+  printf("Enter tlb miss handler!\n");
+  pagetable_t pt =  MAKE_PT(satp);
+  //TODO should the tlb miss handler be able to allocate? Probably not -> Page Handlers job
+  pte_t *pte = walk(pt, addr, 0);
+
+  //TODO Verify valid flag
   w_tlbh(addr);
-  w_tlbl((uint64)addr+(uint64)0x1000);
+  w_tlbl(*pte);
   return;
 }
