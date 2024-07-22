@@ -263,7 +263,7 @@ devintr()
 
 void unhandled_exc(uint64 mcause, uint64 mtval) {
   printf("Unhandled machine-mode exception!\n"
-         "mcause=%p\tmtval?=%p", mcause, mtval);
+         "mcause=%p\tmtval?=%p\n\n", mcause, mtval);
 }
 
 

@@ -205,6 +205,12 @@ w_pmpaddr0(uint64 x)
 
 #define MAKE_PT(satp) ((pagetable_t) (satp << 12))
 
+#define SV39_RESERVED_BITS (0xffcull << 54)
+
+//#define PTE2PA(pa) (((pa & ~(SV39_RESERVED_BITS))>> 10) << 12)
+
+//#define PA2PTE(pte, flags) ((((pa >> 12) << 10) | flags) & ~(SV39_RESERVED_BITS) )
+
 // supervisor address translation and protection;
 // holds the address of the page table.
 static inline void 
