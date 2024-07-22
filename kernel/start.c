@@ -11,7 +11,7 @@ void timerinit();
 __attribute__ ((aligned (16))) char stack0[4096 * NCPU];
 
 // a scratch area per CPU for machine-mode timer interrupts.
-uint64 timer_scratch[NCPU][5];
+uint64 kernel_scratch[NCPU][7];
 
 // address to interrupt vector table in kernelvec.S.
 extern void mtvec_vector_table();
@@ -75,9 +75,10 @@ timerinit()
   // scratch[0..2] : space for timervec to save registers.
   // scratch[3] : address of CLINT MTIMECMP register.
   // scratch[4] : desired interval (in cycles) between timer interrupts.
-  uint64 *scratch = &timer_scratch[id][0];
+  uint64 *scratch = &kernel_scratch[id][0];
   scratch[3] = CLINT_MTIMECMP(id);
   scratch[4] = interval;
+  scratch[6] = (uint64)(uint64*)&stack0[(id+1)*4096];
   w_mscratch((uint64)scratch);
 
   // set the machine-mode trap handler.

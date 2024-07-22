@@ -163,8 +163,22 @@ default_exception_handler:
         # TODO start.c currently sets mscratch for the timervec 
         # TODO the timer vec needs to be handled here as well
         # Get hart stack, initialized in entry.S
-        csrrw sp, mscratch, sp # sp now contains the hart stack pointer, mscratch the sp of the faulting code 
+        # csrrw sp, mscratch, sp # sp now contains the hart stack pointer, mscratch the sp of the faulting code 
 
+        # start.c has set up the memory that mscratch points to:
+        # scratch[0,8,16] : register save area.
+        # scratch[24] : address of CLINT's MTIMECMP register.
+        # scratch[32] : desired interval between interrupts.
+        # scratch[40] : address of cpu stack
+        
+        csrrw a0, mscratch, a0
+        sd sp, 40(a0)
+        # sd a2, 8(a0)
+        # sd a3, 16(a0)
+
+        ld sp, 48(a0)
+        csrrw a0, mscratch, a0
+        
         # Disable Interrupts? -> Happens automatically
 
         # make room to save registers.
@@ -202,8 +216,9 @@ default_exception_handler:
         sd t5, 232(sp)
         sd t6, 240(sp)
 
-        csrr t0, sscratch
-        sd t0, 8(sp)
+        # ??
+        # csrr t0, sscratch
+        # sd t0, 8(sp)
 
         # TODO Pass args to fx
 
@@ -247,9 +262,15 @@ default_exception_handler:
         ld t6, 240(sp)
 
         addi sp, sp, 256
+        # save stack pointer necessary? 
+        
+        csrrw a0, mscratch, a0
+
+        sd sp, 48(a0)
+        ld sp, 40(a0)
 
         # swap back hart stack pointer and faulting code sp
-        csrrw sp, mscratch, sp
+        csrrw a0, mscratch, a0
 
         mret
 
