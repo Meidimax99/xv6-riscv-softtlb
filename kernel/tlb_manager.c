@@ -9,7 +9,6 @@ walk_pt(uint64 satp, uint64 va)
   uint64 *pt = (uint64*)SATP2PA(satp);
   if(va >= MAXVA)
     panic("walk");
-
   for(int level = 2; level > 0; level--) {
     pte_t *pte = &pt[PX(level, va)];
     if(*pte & PTE_V) {
