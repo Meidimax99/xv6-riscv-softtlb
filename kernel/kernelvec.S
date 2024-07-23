@@ -95,6 +95,7 @@ kernelvec:
 
 .global mtvec_vector_table
 
+
 .globl timervec
 .align 4 # TOOD necessary?
 
@@ -169,7 +170,9 @@ default_exception_handler:
         # scratch[0,8,16] : register save area.
         # scratch[24] : address of CLINT's MTIMECMP register.
         # scratch[32] : desired interval between interrupts.
-        # scratch[40] : address of cpu stack
+        # scratch[40] : sp save area
+        # scratch[48] : address of cpu stack
+
         
         csrrw a0, mscratch, a0
         sd sp, 40(a0)
@@ -215,6 +218,8 @@ default_exception_handler:
         sd t4, 224(sp)
         sd t5, 232(sp)
         sd t6, 240(sp)
+
+        addi s0, sp, 256 # Set Frame Pointer
 
         # ??
         # csrr t0, sscratch
@@ -271,7 +276,6 @@ default_exception_handler:
 
         # swap back hart stack pointer and faulting code sp
         csrrw a0, mscratch, a0
-
         mret
 
 

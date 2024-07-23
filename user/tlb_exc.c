@@ -10,5 +10,5 @@ void do_tlb_exc(void) {
 }
 int main(int argc, char *argv[]) {
   do_tlb_exc();
-  exit(0);
+  //exit(0);
 }

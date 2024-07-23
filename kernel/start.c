@@ -78,7 +78,7 @@ timerinit()
   uint64 *scratch = &kernel_scratch[id][0];
   scratch[3] = CLINT_MTIMECMP(id);
   scratch[4] = interval;
-  scratch[6] = (uint64)(uint64*)&stack0[(id+1)*4096];
+  scratch[6] = (uint64)&(stack0[(id+1)*2048]);
   w_mscratch((uint64)scratch);
 
   // set the machine-mode trap handler.
