@@ -12,9 +12,11 @@
 
 // Kernel Starts at KERNBASE 0x80000000
 
-#define MAX_PROC_MEM(kernelend) ((PHYSTOP - PGROUNDUP(kernelend)) / NPROC)
-#define PROC_START(procid, kernelend) (PGROUNDUP(kernelend) + (procid * MAX_PROC_MEM(kernelend)))
-#define PROC_END(procid, kernelend) ((PGROUNDUP(kernelend) + ((procid + 1) * MAX_PROC_MEM(kernelend)))-1)
+//Nproc + 1 because the #0 space is for kernel objects
+#define MAX_PROC_MEM(kernelend) ((((PHYSTOP - (PGROUNDUP((uint64)kernelend))) / (NPROC + 1)) >> 12 )<< 12)
+#define PROC_START(procid, kernelend) (PGROUNDUP((uint64)kernelend) + (procid * MAX_PROC_MEM((uint64)kernelend)))
+#define PROC_N(index, procid, kernelend) (PROC_START(procid, kernelend) + (index * (0x1000)))
+#define PROC_END(procid, kernelend) ((PGROUNDUP((uint64)kernelend) + ((procid + 1) * MAX_PROC_MEM((uint64)kernelend)))-0x1000)
 void freerange(void *pa_start, void *pa_end);
 
 extern char end[]; // first address after kernel.
@@ -53,10 +55,10 @@ char maxPrefix(uint64 *num) {
 }
 void printinfo() {
   printf("proc address ranges:\n\n");
-  for(int i = 0; i < NPROC; i++) {
-    uint64 mem_start = PROC_START(i, (uint64)end);
-    uint64 mem_end = PROC_END(i, (uint64)end);
-    uint64 npages = (PROC_END(i, (uint64)end)- PROC_START(i, (uint64)end)) >> 12;
+  for(int i = 0; i < NPROC+1; i++) {
+    uint64 mem_start = PROC_START(i, end);
+    uint64 mem_end = PROC_END(i, end);
+    uint64 npages = (mem_end - mem_start) >> 12;
     uint64 maxmem = npages * 4;
     char prefix = maxPrefix(&maxmem);
     printf("Proc %d:\n\tstart:%p\n\tend:%p\n\tmax pages: %d (%d%cB)\n\n",
@@ -71,7 +73,7 @@ kinit()
 { 
   printinfo();
   initlock(&kmem.lock, "kmem");
-  freerange(end, (void*)(PHYSTOP-0x1000)); //TODO undo change -> just for testing
+  freerange(end, (void*)(PROC_END(0, end)-0x1000)); //TODO undo change -> just for testing
   uint32 beef= 0xDEADBEEF;
   memsetStr((char*)0x85000000, (char*) &beef, 4, PGSIZE); // fill with junk
 }
@@ -89,6 +91,8 @@ freerange(void *pa_start, void *pa_end)
 // which normally should have been returned by a
 // call to kalloc().  (The exception is when
 // initializing the allocator; see kinit above.)
+
+//TODO Change to fit kalloc()
 void
 kfree(void *pa)
 {
@@ -118,21 +122,36 @@ kfree(void *pa)
 //TODO check cases were memory is not allocated from a process ( -> Disk ?)
 //    proc_mapstacks!
 
+#define NEXT_PAGE_INDEX(size) (size >> 12)
+
 void *
-kalloc(int procid)
+kalloc(struct proc *p)
 {
-  (void)procid;
-  struct run *r;
+  if(p == 0) {
+    //kernel
+    //Maintain normal list for kernel because I do not know if the other calls from kalloc
+    //come from a specific process -> possibly inconsistent process size
+    struct run *r;
+    acquire(&kmem.lock);
+    r = kmem.freelist;
+    if(r)
+      kmem.freelist = r->next;
+    release(&kmem.lock);
+    return (void*)r;
+  } else {
+    uint64 size = p->sz;
+    uint64 index = NEXT_PAGE_INDEX(size);
+    uint64 *pa = (uint64*)PROC_N(index, p->pid, end);
+    if((uint64)pa > PROC_END(p->pid, end)) {
+      return 0;
+    }
+    printf("allocating for pid=%d page_index=%d pa=%p\n", p->pid, index, pa);
+    return (void*)pa;
+  }
 
 
-  acquire(&kmem.lock);
-  r = kmem.freelist;
-  if(r)
-    kmem.freelist = r->next;
-  release(&kmem.lock);
 
   //modhere Dont fill with junk
   // if(r)
   //   memset((char*)r, 5, PGSIZE); // fill with junk
-  return (void*)r;
 }
