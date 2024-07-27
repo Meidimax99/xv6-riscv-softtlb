@@ -99,6 +99,11 @@ printf(char *fmt, ...)
       for(; *s; s++)
         consputc(*s);
       break;
+    case 'c':
+      c = va_arg(ap, int);
+        s = "(null)";
+      consputc((char)c);
+      break;
     case '%':
       consputc('%');
       break;
