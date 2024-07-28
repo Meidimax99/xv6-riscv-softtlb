@@ -35,7 +35,7 @@ proc_mapstacks(pagetable_t kpgtbl)
   struct proc *p;
   
   for(p = proc; p < &proc[NPROC]; p++) {
-    char *pa = kalloc(0);
+    char *pa = kalloc();
     if(pa == 0)
       panic("kalloc");
     uint64 va = KSTACK((int) (p - proc));
@@ -126,15 +126,15 @@ found:
   p->state = USED;
 
   // Allocate a trapframe page.
-  if((p->trapframe = (struct trapframe *)kalloc(p)) == 0){
+  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
     freeproc(p);
     release(&p->lock);
     return 0;
   }
 
   // An empty user page table.
-  p->pagetable = proc_pagetable(p);
-  if(p->pagetable == 0){
+  p->asid = getAddressSpace(p->pid);
+  if(p->asid == -1){
     freeproc(p);
     release(&p->lock);
     return 0;
@@ -179,7 +179,7 @@ proc_pagetable(struct proc *p)
   pagetable_t pagetable;
 
   // An empty page table.
-  pagetable = uvmcreate();
+  pagetable = uvmcreate(p);
   if(pagetable == 0)
     return 0;
 
@@ -211,6 +211,7 @@ proc_pagetable(struct proc *p)
   }
   return pagetable;
 }
+
 
 // Free a process's page table, and free the
 // physical memory it refers to.
@@ -263,6 +264,11 @@ userinit(void)
 
 // Grow or shrink user memory by n bytes.
 // Return 0 on success, -1 on failure.
+
+//With the static allocation scheme, programs already have a fixed memory portion allocated
+//to them, the sbrk function can still be used to check if the maximum size of the program has 
+//been reached
+//otherwise sbrk has no effect and will not actually allocate or deallocate new pages
 int
 growproc(int n)
 {
@@ -270,15 +276,12 @@ growproc(int n)
   struct proc *p = myproc();
 
   sz = p->sz;
-  if(n > 0){
-    if((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W)) == 0) {
-      return -1;
-    }
-  } else if(n < 0){
-    sz = uvmdealloc(p->pagetable, sz, sz + n);
+  uint64 newsize = sz + n;
+  //TODO is 0 a appropiate lower bound?
+  if(newsize > 0 && newsize <= MAX_AS_MEM) {
+    return 0;
   }
-  p->sz = sz;
-  return 0;
+  return -1;
 }
 
 // Create a new process, copying the parent.

@@ -10,13 +10,9 @@
 #include "defs.h"
 #include "proc.h"
 
-// Kernel Starts at KERNBASE 0x80000000
+
 
 //Nproc + 1 because the #0 space is for kernel objects
-#define MAX_PROC_MEM(kernelend) ((((PHYSTOP - (PGROUNDUP((uint64)kernelend))) / (NPROC + 1)) >> 12 )<< 12)
-#define PROC_START(procid, kernelend) (PGROUNDUP((uint64)kernelend) + (procid * MAX_PROC_MEM((uint64)kernelend)))
-#define PROC_N(index, procid, kernelend) (PROC_START(procid, kernelend) + (index * (0x1000)))
-#define PROC_END(procid, kernelend) ((PGROUNDUP((uint64)kernelend) + ((procid + 1) * MAX_PROC_MEM((uint64)kernelend)))-0x1000)
 void freerange(void *pa_start, void *pa_end);
 
 extern char end[]; // first address after kernel.
@@ -30,6 +26,10 @@ struct {
   struct spinlock lock;
   struct run *freelist;
 } kmem;
+
+//#0 is conceptually for the kernel but not used
+int address_spaces[NPROC+1];
+
 
 void*
 memsetStr(void *dst, char *str, uint strlen, uint n)
@@ -54,26 +54,59 @@ char maxPrefix(uint64 *num) {
   return prefixes[index];
 }
 void printinfo() {
-  printf("proc address ranges:\n\n");
+  printf("address ranges:\n\n");
   for(int i = 0; i < NPROC+1; i++) {
-    uint64 mem_start = PROC_START(i, end);
-    uint64 mem_end = PROC_END(i, end);
+    uint64 mem_start = AS_START(i);
+    uint64 mem_end = AS_END(i);
     uint64 npages = (mem_end - mem_start) >> 12;
     uint64 maxmem = npages * 4;
     char prefix = maxPrefix(&maxmem);
-    printf("Proc %d:\n\tstart:%p\n\tend:%p\n\tmax pages: %d (%d%cB)\n\n",
-        i, 
+    if(i == 0) {
+      printf("Kernel:\n\tstart:%p\n\tend:%p\n\tmax pages: %d (%d%cB)\n\n",
         mem_start, 
         mem_end, 
         npages, maxmem, prefix);
+    } else {
+      printf("Address Space %d:\n\tstart:%p\n\tend:%p\n\tmax pages: %d (%d%cB)\n\n",
+          i, 
+          mem_start, 
+          mem_end, 
+          npages, maxmem, prefix);
+    }
   }
 }
+
+void initAddressSpaces(void) {
+  for(int i = 0; i < NPROC+1; i++) {
+    address_spaces[i] = 0;
+  }
+}
+
+int getAddressSpace(int pid) {
+  for(int i = 1; i < NPROC+1; i++) {
+    if(address_spaces[i] == 0) {
+      address_spaces[i] = pid;
+      return i;
+    }
+  }
+  return -1;
+}
+
+int freeAddressSpace(int pid, int asid) {
+  if(asid != 0 && address_spaces[asid] == pid) {
+    address_spaces[asid] = 0;
+    return 0;
+  }
+  return -1;
+}
+
 void
 kinit()
 { 
+  initAddressSpaces();
   printinfo();
   initlock(&kmem.lock, "kmem");
-  freerange(end, (void*)(PROC_END(0, end)-0x1000)); //TODO undo change -> just for testing
+  freerange(end, (void*)(KERNEL_MEM_END)); //TODO undo change -> just for testing
   uint32 beef= 0xDEADBEEF;
   memsetStr((char*)0x85000000, (char*) &beef, 4, PGSIZE); // fill with junk
 }
@@ -122,36 +155,17 @@ kfree(void *pa)
 //TODO check cases were memory is not allocated from a process ( -> Disk ?)
 //    proc_mapstacks!
 
-#define NEXT_PAGE_INDEX(size) (size >> 12)
 
 void *
-kalloc(struct proc *p)
+kalloc()
 {
-  if(p == 0) {
-    //kernel
-    //Maintain normal list for kernel because I do not know if the other calls from kalloc
-    //come from a specific process -> possibly inconsistent process size
-    struct run *r;
-    acquire(&kmem.lock);
-    r = kmem.freelist;
-    if(r)
-      kmem.freelist = r->next;
-    release(&kmem.lock);
-    return (void*)r;
-  } else {
-    uint64 size = p->sz;
-    uint64 index = NEXT_PAGE_INDEX(size);
-    uint64 *pa = (uint64*)PROC_N(index, p->pid, end);
-    if((uint64)pa > PROC_END(p->pid, end)) {
-      return 0;
-    }
-    printf("allocating for pid=%d page_index=%d pa=%p\n", p->pid, index, pa);
-    return (void*)pa;
-  }
 
-
-
-  //modhere Dont fill with junk
-  // if(r)
-  //   memset((char*)r, 5, PGSIZE); // fill with junk
+  struct run *r;
+  acquire(&kmem.lock);
+  r = kmem.freelist;
+  if(r)
+    kmem.freelist = r->next;
+  release(&kmem.lock);
+  //printf("kernel palloc: %p\n", (void*)r);
+  return (void*)r;
 }

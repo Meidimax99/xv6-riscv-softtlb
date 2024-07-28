@@ -199,7 +199,13 @@ w_pmpaddr0(uint64 x)
 // use riscv's sv39 page table scheme.
 #define SATP_SV39 (8L << 60)
 
+#define SATP_SV39_ASID_SHIFT 44
+
 #define MAKE_SATP(pagetable) (SATP_SV39 | (((uint64)pagetable) >> 12))
+
+#define ASID_SATP(asid) (SATP_SV39 | (asid << SATP_SV39_ASID_SHIFT))
+
+#define KERNEL_SATP ASID_SATP(0ull)
 
 #define SATP_MODE_BITS (0xfull << 60)
 

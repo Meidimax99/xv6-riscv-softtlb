@@ -137,6 +137,7 @@ UPROGS=\
 	$U/_zombie\
 	$U/_illegal_instr\
 	$U/_tlb_exc\
+	$U/_sbrk_test\
 
 
 fs.img: mkfs/mkfs README $(UPROGS)
