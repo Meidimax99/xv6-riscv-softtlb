@@ -398,6 +398,28 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
   }
   return 0;
 }
+// Copy from kernel to user.
+// Copy len bytes from src to virtual address dstva in a given page table.
+// Return 0 on success, -1 on error.
+int
+copyout_phy(uint64 dstpa, char *src, uint64 len)
+{
+
+  uint64 n, pa0;
+
+  while(len > 0){
+    pa0 = PGROUNDDOWN(dstpa);
+    n = PGSIZE - (dstpa - pa0);
+    if(n > len)
+      n = len;
+    memmove((void *)dstpa, src, n);
+
+    len -= n;
+    src += n;
+    dstpa = pa0 + PGSIZE;
+  }
+  return 0;
+}
 
 // Copy from user to kernel.
 // Copy len bytes to dst from virtual address srcva in a given page table.

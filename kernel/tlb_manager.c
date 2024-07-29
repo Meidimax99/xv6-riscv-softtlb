@@ -9,6 +9,10 @@
 //Can the symbol be retrieved? How does that even work?
 extern char trampoline[];
 uint64 get_mapping(uint64 addr, uint16 asid) {
+  //Special case for testing deceased meat
+  if(PGROUNDDOWN(addr) == 0x84fff000) {
+    return 0x85000000;
+  }
   //special case for trampoline, which is in every address space at the same address
   // (except for the physical one!)
   if(PGROUNDDOWN(addr) == TRAMPOLINE) {
