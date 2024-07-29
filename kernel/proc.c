@@ -676,7 +676,7 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 {
   struct proc *p = myproc();
   if(user_src){
-    return copyin(p->pagetable, dst, src, len);
+    return copyin_phy(dst, AS_START(p->asid) + src, len);
   } else {
     memmove(dst, (char*)src, len);
     return 0;

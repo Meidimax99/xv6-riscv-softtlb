@@ -49,22 +49,37 @@ pagetable_t kvmmake(void)
   return kpgtbl;
 }
 
+
+
+
+
+
 // Initialize the one kernel_pagetable
 void
 kvminit(void)
 {
-  kernel_pagetable = kvmmake();
+  
+ //kernel_pagetable = kvmmake();
 }
+
 
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
 void
 kvminithart()
 {
+//TODO HACK identity page table for gdb
+
+  uint64 *pt = (uint64*)kalloc(); 
+  for(uint64 i = 0 ; i < 512; i++) {
+    pt[i] = 0xffffffffffffffff;
+  }
+  pt[2] = ((0x80000000 >> 2)| PTE_V | PTE_X | PTE_W | PTE_R);
+
   // wait for any previous writes to the page table memory to finish.
   sfence_vma();
 
-  w_satp(KERNEL_SATP);
+  w_satp(KERNEL_SATP | ((uint64)pt>>12));
 
   // flush stale entries from the TLB.
   sfence_vma();
@@ -401,6 +416,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 // Copy from kernel to user.
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
+//TODO do not need to go page by page, but need to check AS size
 int
 copyout_phy(uint64 dstpa, char *src, uint64 len)
 {
@@ -448,28 +464,44 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
   return 0;
 }
 
+int
+copyin_phy(char *dst, uint64 srcpa, uint64 len)
+{
+
+  uint64 n, pa0;
+
+  while(len > 0){
+    pa0 = PGROUNDDOWN(srcpa);
+    n = PGSIZE - (srcpa - pa0);
+    if(n > len)
+      n = len;
+    memmove(dst, (void *)(pa0 + (srcpa - pa0)), n);
+
+    len -= n;
+    dst += n;
+    srcpa = pa0 + PGSIZE;
+  }
+  return 0;
+}
 // Copy a null-terminated string from user to kernel.
 // Copy bytes to dst from virtual address srcva in a given page table,
 // until a '\0', or max.
 // Return 0 on success, -1 on error.
+//TODO do not need to go page by page, but need to check AS size
+
 int
-copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
+copyinstr_phy(char *dst, uint64 srcpa, uint64 max)
 {
-  //TODO Instant panic to identify where vm code is called
-  panic("copyinstr");
-  uint64 n, va0, pa0;
+
+  uint64 n, pa0;
   int got_null = 0;
 
   while(got_null == 0 && max > 0){
-    va0 = PGROUNDDOWN(srcva);
-    pa0 = walkaddr(pagetable, va0);
-    if(pa0 == 0)
-      return -1;
-    n = PGSIZE - (srcva - va0);
+    pa0 = PGROUNDDOWN(srcpa);
+    n = PGSIZE - (srcpa - pa0);
     if(n > max)
       n = max;
-
-    char *p = (char *) (pa0 + (srcva - va0));
+    char *p = (char *) (pa0 + (srcpa - pa0));
     while(n > 0){
       if(*p == '\0'){
         *dst = '\0';
@@ -484,7 +516,7 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
       dst++;
     }
 
-    srcva = va0 + PGSIZE;
+    srcpa = pa0 + PGSIZE;
   }
   if(got_null){
     return 0;

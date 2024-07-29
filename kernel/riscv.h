@@ -1,5 +1,5 @@
 #ifndef __ASSEMBLER__
-
+//TODO Include Guard?
 // which hart (core) is this?
 static inline uint64
 r_mhartid()

@@ -45,13 +45,14 @@ void tlb_handle_miss(uint64 addr, uint64 satp) {
 
   //TODO Locks!
   //TODO buffering printer, only prints completed lines
-  //printf("tlb_manager: addr=%p satp=%p\n", addr, satp);
-
-  uint64 pa = get_mapping(addr, SATP2ASID(satp));
+  //uint16 mmuid = addr & 0xfff;
+  uint64 addr_no_mmuid = addr & ~0xfff;
+  //printf("tlb_manager: addr=%p satp=%p mmuid=%d\n", addr_no_mmuid, satp, mmuid);
+  uint64 pa = get_mapping(addr_no_mmuid, SATP2ASID(satp));
 
   w_tlbh(addr);
   //TODO all access rights for now
-  uint16 prot =  PTE_R | PTE_W | PTE_U | PTE_X | PTE_V;
+  uint16 prot =  PTE_R | PTE_W | PTE_X | PTE_V | ((SATP2ASID(satp) != 0) ? PTE_U : 0);
   w_tlbl(PA2PTE(pa) | prot);
   return;
 }
