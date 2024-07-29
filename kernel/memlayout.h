@@ -52,9 +52,6 @@
 // in both user and kernel space.
 #define TRAMPOLINE (MAXVA - PGSIZE)
 
-// map kernel stacks beneath the trampoline,
-// each surrounded by invalid guard pages.
-#define KSTACK(p) (TRAMPOLINE - ((p)+1)* 2*PGSIZE)
 
 // User memory layout.
 // Address zero first:
@@ -77,4 +74,12 @@ extern char end[];
 
 #define KERNEL_MEM_START AS_START(0)
 #define KERNEL_MEM_END AS_END(0)
+
+
+// map kernel stacks beneath the trampoline,
+// each surrounded by invalid guard pages.
+//This puts the kernel stack for each pid not virtually under the trampoline page
+//But rather the kernel stacks per asid at the and of each address space
+#define KSTACK(asid) (AS_END(asid) - (4*PGSIZE))
+#define TRAPFRAME_FROM_ASID(asid) (AS_END(asid) - (2*PGSIZE))
 

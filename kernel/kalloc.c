@@ -81,7 +81,7 @@ void initAddressSpaces(void) {
     address_spaces[i] = 0;
   }
 }
-
+//TODO LOCKING
 int getAddressSpace(int pid) {
   for(int i = 1; i < NPROC+1; i++) {
     if(address_spaces[i] == 0) {
@@ -91,6 +91,7 @@ int getAddressSpace(int pid) {
   }
   return -1;
 }
+//TODO LOCKING
 
 int freeAddressSpace(int pid, int asid) {
   if(asid != 0 && address_spaces[asid] == pid) {

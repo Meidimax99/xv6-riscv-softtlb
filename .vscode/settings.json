@@ -8,7 +8,8 @@
         "syscall.h": "c",
         "memlayout.h": "c",
         "riscv.h": "c",
-        "sleeplock.h": "c"
+        "sleeplock.h": "c",
+        "elf.h": "c"
     },
     "files.exclude": {
         "**/*.d": true,

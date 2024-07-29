@@ -20,7 +20,7 @@ main()
     //printf("kinit\n");
     kinit();         // physical page allocator
     //printf("kvminit\n");
-    kvminit();       // create kernel page table
+    //kvminit();       // create kernel page table
     //printf("kvminithartn");
     kvminithart();   // turn on paging
     //printf("procinit\n");

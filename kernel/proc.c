@@ -29,6 +29,10 @@ struct spinlock wait_lock;
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
 // guard page.
+
+//TODO Not necessary with the static allocation scheme, they are just already there
+//TODO also there is no mapping other than an identity mapping necessary, because
+//they occupy the same address 
 void
 proc_mapstacks(pagetable_t kpgtbl)
 {
@@ -54,7 +58,8 @@ procinit(void)
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
       p->state = UNUSED;
-      p->kstack = KSTACK((int) (p - proc));
+      //Stack is assigned on address space acquisition
+      //p->kstack = KSTACK((int) (p - proc));
   }
 }
 
@@ -126,11 +131,12 @@ found:
   p->state = USED;
 
   // Allocate a trapframe page.
-  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
-    freeproc(p);
-    release(&p->lock);
-    return 0;
-  }
+  //NOTE statically allocated at the end of address space
+  // if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+  //   freeproc(p);
+  //   release(&p->lock);
+  //   return 0;
+  // }
 
   // An empty user page table.
   p->asid = getAddressSpace(p->pid);
@@ -139,6 +145,9 @@ found:
     release(&p->lock);
     return 0;
   }
+
+  p->kstack = KSTACK(p->asid);
+  p->trapframe = (struct trapframe*)TRAPFRAME_FROM_ASID(p->asid);
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
@@ -243,12 +252,24 @@ userinit(void)
   struct proc *p;
 
   p = allocproc();
+  if(p == 0) {
+    panic("allocproc!\n");
+  }
   initproc = p;
   
   // allocate one user page and copy initcode's instructions
   // and data into it.
-  uvmfirst(p->pagetable, initcode, sizeof(initcode));
+  //uvmfirst(p->pagetable, initcode, sizeof(initcode));
+
+  int size = sizeof(initcode);
+  if(size >= PGSIZE)
+    panic("uvmfirst: more than a page");
+
+  uint16 asid = p->asid;
+  uint64 addr = AS_START(asid);
+  memmove((uint64*) addr, initcode, size);
   p->sz = PGSIZE;
+
 
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;      // user program counter

@@ -16,6 +16,7 @@ extern char etext[];  // kernel.ld sets this to end of kernel code.
 extern char trampoline[]; // trampoline.S
 
 // Make a direct-map page table for the kernel.
+//TODO these mappings
 pagetable_t kvmmake(void)
 {
   pagetable_t kpgtbl;
@@ -131,6 +132,9 @@ walkaddr(pagetable_t pagetable, uint64 va)
 void
 kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("kvmmap");
+  
   if(mappages(kpgtbl, va, sz, pa, perm) != 0)
     panic("kvmmap");
 }
@@ -142,6 +146,8 @@ kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
 int
 mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("mappages");
   uint64 a, last;
   pte_t *pte;
 
@@ -196,6 +202,8 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
 pagetable_t
 uvmcreate(struct proc *p)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("uvmcreate");
   //TODO Procid!
   pagetable_t pagetable;
   pagetable = (pagetable_t) kalloc();
@@ -211,6 +219,8 @@ uvmcreate(struct proc *p)
 void
 uvmfirst(pagetable_t pagetable, uchar *src, uint sz)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("uvmfirst");
   char *mem;
 
   if(sz >= PGSIZE)
@@ -227,6 +237,8 @@ uvmfirst(pagetable_t pagetable, uchar *src, uint sz)
 uint64
 uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm, int sbrk)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("uvmalloc");
   char *mem;
   uint64 a;
 
@@ -259,6 +271,8 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm, int sbrk)
 uint64
 uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("uvmdealloc");
   if(newsz >= oldsz)
     return oldsz;
 
@@ -275,6 +289,8 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 void
 freewalk(pagetable_t pagetable)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("freewalk");
   // there are 2^9 = 512 PTEs in a page table.
   for(int i = 0; i < 512; i++){
     pte_t pte = pagetable[i];
@@ -295,6 +311,8 @@ freewalk(pagetable_t pagetable)
 void
 uvmfree(pagetable_t pagetable, uint64 sz)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("uvmfree");
   if(sz > 0)
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
   freewalk(pagetable);
@@ -309,6 +327,8 @@ uvmfree(pagetable_t pagetable, uint64 sz)
 int
 uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("uvmcopy");
   pte_t *pte;
   uint64 pa, i;
   uint flags;
@@ -342,6 +362,8 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
 void
 uvmclear(pagetable_t pagetable, uint64 va)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("uvmclear");
   pte_t *pte;
   
   pte = walk(pagetable, va, 0);
@@ -356,6 +378,8 @@ uvmclear(pagetable_t pagetable, uint64 va)
 int
 copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("copyout");
   uint64 n, va0, pa0;
 
   while(len > 0){
@@ -381,6 +405,8 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 int
 copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("copyin");
   uint64 n, va0, pa0;
 
   while(len > 0){
@@ -407,6 +433,8 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 int
 copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 {
+  //TODO Instant panic to identify where vm code is called
+  panic("copyinstr");
   uint64 n, va0, pa0;
   int got_null = 0;
 
