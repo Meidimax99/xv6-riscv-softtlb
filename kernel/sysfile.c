@@ -82,6 +82,7 @@ sys_read(void)
 uint64
 sys_write(void)
 {
+
   struct file *f;
   int n;
   uint64 p;
@@ -90,7 +91,7 @@ sys_write(void)
   argint(2, &n);
   if(argfd(0, 0, &f) < 0)
     return -1;
-
+  printf("%s",p);
   return filewrite(f, p, n);
 }
 
@@ -442,6 +443,7 @@ sys_exec(void)
   if(argstr(0, path, MAXPATH) < 0) {
     return -1;
   }
+  printf("String: %s\n", path);
   memset(argv, 0, sizeof(argv));
   for(i=0;; i++){
     if(i >= NELEM(argv)){
@@ -468,7 +470,7 @@ sys_exec(void)
 
   return ret;
 
- bad:
+bad:
   for(i = 0; i < NELEM(argv) && argv[i] != 0; i++)
     kfree(argv[i]);
   return -1;

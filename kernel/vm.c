@@ -420,20 +420,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 int
 copyout_phy(uint64 dstpa, char *src, uint64 len)
 {
-
-  uint64 n, pa0;
-
-  while(len > 0){
-    pa0 = PGROUNDDOWN(dstpa);
-    n = PGSIZE - (dstpa - pa0);
-    if(n > len)
-      n = len;
-    memmove((void *)dstpa, src, n);
-
-    len -= n;
-    src += n;
-    dstpa = pa0 + PGSIZE;
-  }
+  memmove((void *)dstpa, src, len);
   return 0;
 }
 
@@ -467,20 +454,7 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 int
 copyin_phy(char *dst, uint64 srcpa, uint64 len)
 {
-
-  uint64 n, pa0;
-
-  while(len > 0){
-    pa0 = PGROUNDDOWN(srcpa);
-    n = PGSIZE - (srcpa - pa0);
-    if(n > len)
-      n = len;
-    memmove(dst, (void *)(pa0 + (srcpa - pa0)), n);
-
-    len -= n;
-    dst += n;
-    srcpa = pa0 + PGSIZE;
-  }
+  memmove(dst, (void *)srcpa, len);
   return 0;
 }
 // Copy a null-terminated string from user to kernel.

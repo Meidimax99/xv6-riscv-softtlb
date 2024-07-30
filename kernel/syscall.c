@@ -12,9 +12,10 @@ int
 fetchaddr(uint64 addr, uint64 *ip)
 {
   struct proc *p = myproc();
-  if(addr >= p->sz || addr+sizeof(uint64) > p->sz) // both tests needed, in case of overflow
+  uint64 vaddr = addr - AS_START(p->asid);
+  if(vaddr >= p->sz || vaddr+sizeof(uint64) > p->sz) // both tests needed, in case of overflow
     return -1;
-  if(copyin_phy((char *)ip, AS_START(p->asid) + addr, sizeof(*ip)) != 0)
+  if(copyin_phy((char *)ip, addr, sizeof(*ip)) != 0)
     return -1;
   return 0;
 }
@@ -24,8 +25,7 @@ fetchaddr(uint64 addr, uint64 *ip)
 int
 fetchstr(uint64 addr, char *buf, int max)
 {
-  struct proc *p = myproc();
-  if(copyinstr_phy(buf, AS_START(p->asid), max) < 0)
+  if(copyinstr_phy(buf, addr, max) < 0)
     return -1;
   return strlen(buf);
 }
@@ -65,7 +65,8 @@ argint(int n, int *ip)
 void
 argaddr(int n, uint64 *ip)
 {
-  *ip = argraw(n);
+  struct proc *p = myproc();
+  *ip = AS_START(p->asid) + argraw(n);
 }
 
 // Fetch the nth word-sized system call argument as a null-terminated string.
@@ -76,6 +77,7 @@ argstr(int n, char *buf, int max)
 {
   uint64 addr;
   argaddr(n, &addr);
+  printf("Addr: %p\n", addr);
   return fetchstr(addr, buf, max);
 }
 

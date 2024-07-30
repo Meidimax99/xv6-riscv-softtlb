@@ -64,7 +64,7 @@ exec(char *path, char **argv)
     if(ph.vaddr % PGSIZE != 0)
       goto bad;
     uint64 sz1;
-    if((sz1 = PGROUNDUP(ph.vaddr + ph.memsz)) < MAX_AS_MEM)
+    if((sz1 = PGROUNDUP(ph.vaddr + ph.memsz)) >= MAX_AS_MEM)
       goto bad;
     sz = sz1;
     if(loadseg_phys(AS_START(p->asid) + ph.vaddr, ip, ph.off, ph.filesz) < 0)
@@ -82,7 +82,7 @@ exec(char *path, char **argv)
   // Use the second as the user stack.
   sz = PGROUNDUP(sz);
   uint64 sz1;
-  if((sz1 = sz + 2 * PGSIZE) < MAX_AS_MEM)
+  if((sz1 = sz + 2 * PGSIZE) >= MAX_AS_MEM)
     goto bad;
   sz = sz1;
   //uvmclear(pagetable, sz-2*PGSIZE);
