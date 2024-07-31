@@ -1,5 +1,5 @@
 #include "types.h"
-
+#include "defs.h"
 void*
 memset(void *dst, int c, uint n)
 {
@@ -30,6 +30,9 @@ memcmp(const void *v1, const void *v2, uint n)
 void*
 memmove(void *dst, const void *src, uint n)
 {
+  if((uint64)src > 0x100000000) {
+    printf("src=%p dest=%p\n", src, dst);
+  }
   const char *s;
   char *d;
 

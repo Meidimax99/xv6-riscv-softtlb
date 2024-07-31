@@ -355,12 +355,12 @@ r_ra()
 
 //modhere functions for tlb csr access
 static inline void 
-w_tlbh(uint64 x)
+w_tlbh(vaddr x)
 {
   asm volatile("csrw 0x0BEE, %0" : : "r" (x));
 }
 static inline void 
-w_tlbl(uint64 x)
+w_tlbl(pte_t x)
 {
   asm volatile("csrw 0x0BFF, %0" : : "r" (x));
 }
@@ -392,7 +392,7 @@ typedef uint64 *pagetable_t; // 512 PTEs
 #define PTE_U (1L << 4) // user can access
 
 // shift a physical address to the right place for a PTE.
-#define PA2PTE(pa) ((((uint64)pa) >> 12) << 10)
+#define PA2PTE(pa) ((pte_t)((((uint64)pa) >> 12) << 10))
 
 #define PTE2PA(pte) (((pte) >> 10) << 12)
 

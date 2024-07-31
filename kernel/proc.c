@@ -323,11 +323,12 @@ fork(void)
   }
 
   // Copy user memory from parent to child.
-  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
-    freeproc(np);
-    release(&np->lock);
-    return -1;
-  }
+  memmove((void *)AS_START(np->asid), (void *)AS_START(p->asid), p->sz);
+  // if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+  //   freeproc(np);
+  //   release(&np->lock);
+  //   return -1;
+  // }
   np->sz = p->sz;
 
   // copy saved user registers.
@@ -442,7 +443,7 @@ wait(uint64 addr)
         if(pp->state == ZOMBIE){
           // Found one.
           pid = pp->pid;
-          if(addr != 0 && copyout(p->pagetable, addr, (char *)&pp->xstate,
+          if(addr != 0 && copyout_phy(addr, (char *)&pp->xstate,
                                   sizeof(pp->xstate)) < 0) {
             release(&pp->lock);
             release(&wait_lock);
@@ -677,9 +678,12 @@ either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 int
 either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 {
-  struct proc *p = myproc();
+  //TODO can src sometimes be a virtual user address? -> is user src properly set?
+  //from  either_copyin -> consolewrite -> filewrite -> sys_write -> syscall comes a physical adress 
+  ASSERT_PHYSICAL(src)
+  //struct proc *p = myproc();
   if(user_src){
-    return copyin_phy(dst, AS_START(p->asid) + src, len);
+    return copyin_phy(dst, src, len);
   } else {
     memmove(dst, (char*)src, len);
     return 0;

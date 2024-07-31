@@ -420,6 +420,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 int
 copyout_phy(uint64 dstpa, char *src, uint64 len)
 {
+  ASSERT_PHYSICAL(dstpa);
   memmove((void *)dstpa, src, len);
   return 0;
 }
@@ -464,9 +465,9 @@ copyin_phy(char *dst, uint64 srcpa, uint64 len)
 //TODO do not need to go page by page, but need to check AS size
 
 int
-copyinstr_phy(char *dst, uint64 srcpa, uint64 max)
+copyinstr_phy(char *dst, paddr srcpa, uint64 max)
 {
-
+  ASSERT_PHYSICAL(srcpa)
   uint64 n, pa0;
   int got_null = 0;
 

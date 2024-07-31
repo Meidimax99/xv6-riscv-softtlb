@@ -8,7 +8,7 @@
 
 //Can the symbol be retrieved? How does that even work?
 extern char trampoline[];
-uint64 get_mapping(uint64 addr, uint16 asid) {
+uint64 get_mapping(vaddr addr, uint16 asid) {
   //Special case for testing deceased meat
    
   if(PGROUNDDOWN(addr) == 0x84fff000) {
@@ -41,15 +41,15 @@ uint64 get_mapping(uint64 addr, uint16 asid) {
   return 0;
 }
 
-void tlb_handle_miss(uint64 addr, uint64 satp) {
+void tlb_handle_miss(vaddr addr, uint64 satp) {
   w_tp(r_mhartid()); //fix problems with locks based on cpuid()
 
   //TODO Locks!
   //TODO buffering printer, only prints completed lines
   //uint16 mmuid = addr & 0xfff;
-  uint64 addr_no_mmuid = addr & ~0xfff;
+  vaddr addr_no_mmuid = addr & ~0xfff;
   //printf("tlb_manager: addr=%p satp=%p mmuid=%d\n", addr_no_mmuid, satp, mmuid);
-  uint64 pa = get_mapping(addr_no_mmuid, SATP2ASID(satp));
+  paddr pa = get_mapping(addr_no_mmuid, SATP2ASID(satp));
 
   w_tlbh(addr);
   //TODO all access rights for now

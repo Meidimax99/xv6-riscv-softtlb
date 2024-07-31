@@ -49,8 +49,11 @@ TOOLPREFIX := $(shell if riscv64-unknown-elf-objdump -i 2>&1 | grep 'elf64-big' 
 	echo "***" 1>&2; exit 1; fi)
 endif
 
-QEMU = qemu-system-riscv64
-#QEMU = /home/max/code/ba/bin/qemu-system-riscv64-WTF
+QEMU-NODBG = qemu-system-riscv64
+QEMU-TLB-DBG = /home/max/code/ba/bin/qemu-system-riscv64-tlb-dbg
+
+QEMU := $(if $(DBG),$(QEMU-TLB-DBG),$(QEMU-NODBG))
+
 
 
 CC = $(TOOLPREFIX)gcc
@@ -59,7 +62,7 @@ LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 
-CFLAGS = -Wall -Werror -O0 -fno-omit-frame-pointer -ggdb -gdwarf-2
+CFLAGS = -Wall  -Werror -O0 -fno-omit-frame-pointer -ggdb -gdwarf-2
 CFLAGS += -MD
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax

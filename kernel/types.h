@@ -9,8 +9,10 @@ typedef unsigned long uint64;
 
 typedef uint64 pde_t;
 typedef uint64 vaddr;
+typedef uint64 paddr;
 
 //riscv 
 
 typedef uint64 pte_t;
 typedef uint64 *pagetable_t; // 512 PTEs
+

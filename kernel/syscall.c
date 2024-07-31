@@ -9,7 +9,7 @@
 
 // Fetch the uint64 at addr from the current process.
 int
-fetchaddr(uint64 addr, uint64 *ip)
+fetchaddr(paddr addr, uint64 *ip)
 {
   struct proc *p = myproc();
   uint64 vaddr = addr - AS_START(p->asid);
@@ -23,7 +23,7 @@ fetchaddr(uint64 addr, uint64 *ip)
 // Fetch the nul-terminated string at addr from the current process.
 // Returns length of string, not including nul, or -1 for error.
 int
-fetchstr(uint64 addr, char *buf, int max)
+fetchstr(paddr addr, char *buf, int max)
 {
   if(copyinstr_phy(buf, addr, max) < 0)
     return -1;
@@ -77,7 +77,6 @@ argstr(int n, char *buf, int max)
 {
   uint64 addr;
   argaddr(n, &addr);
-  printf("Addr: %p\n", addr);
   return fetchstr(addr, buf, max);
 }
 

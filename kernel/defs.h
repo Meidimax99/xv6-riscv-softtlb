@@ -202,3 +202,15 @@ void tlb_handle_miss(vaddr addr, uint64 usatp);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+#define ASSERTS
+
+#ifdef ASSERTS
+//TODO discarded qualifier error
+#define ASSERT_PHYSICAL(addr) if(((addr >> 31) & 1ULL) == 0) printf("Vaddr %p in func:%s, but paddr expected!\n", addr, __func__);
+#define ASSERT_VIRTUAL(addr) if(((addr >> 31) & 1ULL) == 1) printf("Paddr %p in func:%s, but vaddr expected\n", addr, __func__);
+#else
+#define ASSERT_PHYSICAL(addr) ((void)addr)
+#define ASSERT_VIRTUAL(addr) if(((addr >> 31) & 1ULL) == 1) printf("Paddr %p in func:%s, but vaddr expected\n", addr, __func__);
+
+#endif
