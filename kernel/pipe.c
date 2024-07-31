@@ -91,7 +91,7 @@ pipewrite(struct pipe *pi, uint64 addr, int n)
       sleep(&pi->nwrite, &pi->lock);
     } else {
       char ch;
-      if(copyin_phy(&ch, AS_START(pr->asid)+ addr + i, 1) == -1)
+      if(copyin_phy(&ch, addr + i, 1) == -1)
         break;
       pi->data[pi->nwrite++ % PIPESIZE] = ch;
       i++;

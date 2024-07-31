@@ -207,8 +207,12 @@ void tlb_handle_miss(vaddr addr, uint64 usatp);
 
 #ifdef ASSERTS
 //TODO discarded qualifier error
-#define ASSERT_PHYSICAL(addr) if(((addr >> 31) & 1ULL) == 0) printf("Vaddr %p in func:%s, but paddr expected!\n", addr, __func__);
-#define ASSERT_VIRTUAL(addr) if(((addr >> 31) & 1ULL) == 1) printf("Paddr %p in func:%s, but vaddr expected\n", addr, __func__);
+#define ASSERT_PHYSICAL(addr) if(((addr >> 31) & 1ULL) == 0){ \
+  printf("Vaddr %p in func:%s, but paddr expected!\n", addr, __func__); \
+  panic("ASSERT_PHYSICAL!\n");};
+#define ASSERT_VIRTUAL(addr) if(((addr >> 31) & 1ULL) == 1) { \
+ printf("Paddr %p in func:%s, but vaddr expected\n", addr, __func__);\
+ panic("ASSERT_VIRTUAL!\n");};
 #else
 #define ASSERT_PHYSICAL(addr) ((void)addr)
 #define ASSERT_VIRTUAL(addr) if(((addr >> 31) & 1ULL) == 1) printf("Paddr %p in func:%s, but vaddr expected\n", addr, __func__);

@@ -106,7 +106,7 @@ void usertrap(void)
         if((which_dev = devintr()) != 0){
           // ok
         } else {
-          printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+          printf("usertrap(): unexpected scause %p pid=%d asid=%d\n", r_scause(), p->pid, p->asid);
           printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
           setkilled(p);
         }
@@ -160,7 +160,7 @@ usertrapret(void)
   w_sepc(p->trapframe->epc);
 
   // tell trampoline.S the user page table to switch to.
-  uint64 satp = ASID_SATP((uint64)p->asid);
+  uint64 satp = ASID_SATP((uint64)p->asid)  | MAKE_SATP(p->pagetable);
 
   // jump to userret in trampoline.S at the top of memory, which 
   // switches to the user page table, restores user registers,

@@ -168,7 +168,7 @@ exec(char *path, char **argv)
 // }
 
 static int
-loadseg_phys(uint64 pa, struct inode *ip, uint offset, uint sz)
+loadseg_phys(paddr pa, struct inode *ip, uint offset, uint sz)
 {
   ASSERT_PHYSICAL(pa)
   uint i, n;

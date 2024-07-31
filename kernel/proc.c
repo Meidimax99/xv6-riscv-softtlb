@@ -18,6 +18,8 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
+extern uint64 *as_pte[];
+
 extern char trampoline[]; // trampoline.S
 
 // helps ensure that wakeups of wait()ing
@@ -146,6 +148,8 @@ found:
     return 0;
   }
 
+  p->pagetable = as_pte[p->asid];
+
   p->kstack = KSTACK(p->asid);
   p->trapframe = (struct trapframe*)TRAPFRAME_FROM_ASID(p->asid);
 
@@ -167,8 +171,10 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
-  if(p->pagetable)
-    proc_freepagetable(p->pagetable, p->sz);
+  //if(p->pagetable)
+    //proc_freepagetable(p->pagetable, p->sz);
+  if(p->asid != 0)
+    freeAddressSpace(p->pid, p->asid);
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;

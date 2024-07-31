@@ -30,6 +30,15 @@ struct {
 //#0 is conceptually for the kernel but not used
 int address_spaces[NPROC+1];
 
+//fake ptes for gdb debugging
+uint64 *as_pte[NPROC+1];
+
+void write_ptes() {
+  for(int i = 1; i < NPROC+1 ; ++i) {
+    as_pte[i] =( uint64*)kalloc();
+    as_pte[i][0] = (AS_START(i) >> 2) | PTE_V | PTE_X | PTE_W | PTE_R | PTE_U;
+  }
+}
 
 void*
 memsetStr(void *dst, char *str, uint strlen, uint n)
@@ -110,6 +119,7 @@ kinit()
   freerange(end, (void*)(KERNEL_MEM_END)); //TODO undo change -> just for testing
   uint32 beef= 0xDEADBEEF;
   memsetStr((char*)0x85000000, (char*) &beef, 4, PGSIZE); // fill with junk
+  write_ptes();
 }
 
 void

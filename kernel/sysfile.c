@@ -92,7 +92,7 @@ sys_write(void)
   argint(2, &n);
   if(argfd(0, 0, &f) < 0)
     return -1;
-  printf("%s",p);
+  //printf("%s",p);
   return filewrite(f, p, n);
 }
 
