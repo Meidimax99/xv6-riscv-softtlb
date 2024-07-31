@@ -9,7 +9,9 @@
         "memlayout.h": "c",
         "riscv.h": "c",
         "sleeplock.h": "c",
-        "elf.h": "c"
+        "elf.h": "c",
+        "param.h": "c",
+        "initializer_list": "c"
     },
     "files.exclude": {
         "**/*.d": true,

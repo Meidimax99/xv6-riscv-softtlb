@@ -9,13 +9,13 @@
 
 // Fetch the uint64 at addr from the current process.
 int
-fetchaddr(paddr addr, uint64 *ip)
+fetchaddr(vaddr addr, uint64 *ip)
 {
+  ASSERT_VIRTUAL(addr)
   struct proc *p = myproc();
-  uint64 vaddr = addr - AS_START(p->asid);
-  if(vaddr >= p->sz || vaddr+sizeof(uint64) > p->sz) // both tests needed, in case of overflow
+  if(addr >= p->sz || addr+sizeof(uint64) > p->sz) // both tests needed, in case of overflow
     return -1;
-  if(copyin_phy((char *)ip, addr, sizeof(*ip)) != 0)
+  if(copyin(p->pagetable, (char *)ip, addr, sizeof(*ip)) != 0)
     return -1;
   return 0;
 }
@@ -23,9 +23,11 @@ fetchaddr(paddr addr, uint64 *ip)
 // Fetch the nul-terminated string at addr from the current process.
 // Returns length of string, not including nul, or -1 for error.
 int
-fetchstr(paddr addr, char *buf, int max)
+fetchstr(vaddr addr, char *buf, int max)
 {
-  if(copyinstr_phy(buf, addr, max) < 0)
+  ASSERT_VIRTUAL(addr)
+  struct proc *p = myproc();
+  if(copyinstr(p->pagetable, buf, addr, max) < 0)
     return -1;
   return strlen(buf);
 }
@@ -63,10 +65,9 @@ argint(int n, int *ip)
 // Doesn't check for legality, since
 // copyin/copyout will do that.
 void
-argaddr(int n, uint64 *ip)
+argaddr(int n, vaddr *ip)
 {
-  struct proc *p = myproc();
-  *ip = AS_START(p->asid) + argraw(n);
+  *ip = argraw(n);
 }
 
 // Fetch the nth word-sized system call argument as a null-terminated string.

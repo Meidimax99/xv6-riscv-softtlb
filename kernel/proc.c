@@ -148,6 +148,7 @@ found:
     return 0;
   }
 
+  //TODO is supposed to help gdb find the right addresses when debugging, doesnt work tho
   p->pagetable = as_pte[p->asid];
 
   p->kstack = KSTACK(p->asid);
@@ -173,7 +174,7 @@ freeproc(struct proc *p)
   p->trapframe = 0;
   //if(p->pagetable)
     //proc_freepagetable(p->pagetable, p->sz);
-  if(p->asid != 0)
+  if(p->asid <= 0)
     freeAddressSpace(p->pid, p->asid);
   p->pagetable = 0;
   p->sz = 0;
@@ -233,9 +234,11 @@ proc_pagetable(struct proc *p)
 void
 proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
-  uvmunmap(pagetable, TRAMPOLINE, 1, 0);
-  uvmunmap(pagetable, TRAPFRAME, 1, 0);
-  uvmfree(pagetable, sz);
+  struct proc *p = myproc();
+  freeAddressSpace(p->pid, p->asid);
+  //uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+  //uvmunmap(pagetable, TRAPFRAME, 1, 0);
+  //uvmfree(pagetable, sz);
 }
 
 // a user program that calls exec("/init")
@@ -268,15 +271,8 @@ userinit(void)
   
   // allocate one user page and copy initcode's instructions
   // and data into it.
-  //uvmfirst(p->pagetable, initcode, sizeof(initcode));
+  uvmfirst(p, initcode, sizeof(initcode));
 
-  int size = sizeof(initcode);
-  if(size >= PGSIZE)
-    panic("uvmfirst: more than a page");
-
-  uint16 asid = p->asid;
-  uint64 addr = AS_START(asid);
-  memmove((uint64*) addr, initcode, size); 
   p->sz = PGSIZE;
 
 
@@ -306,12 +302,16 @@ growproc(int n)
   struct proc *p = myproc();
 
   sz = p->sz;
-  uint64 newsize = sz + n;
-  //TODO is 0 a appropiate lower bound?
-  if(newsize > 0 && newsize <= MAX_AS_MEM) {
-    return 0;
+
+  if(n > 0){
+     if((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W)) == 0) {
+       return -1;
+     }
+   } else if(n < 0){
+     sz = uvmdealloc(p->pagetable, sz, sz + n);
   }
-  return -1;
+  p->sz = sz;
+  return 0;
 }
 
 // Create a new process, copying the parent.
@@ -329,12 +329,11 @@ fork(void)
   }
 
   // Copy user memory from parent to child.
-  memmove((void *)AS_START(np->asid), (void *)AS_START(p->asid), p->sz);
-  // if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
-  //   freeproc(np);
-  //   release(&np->lock);
-  //   return -1;
-  // }
+  if(uvmcopy(p, np, p->sz) < 0){
+    freeproc(np);
+    release(&np->lock);
+    return -1;
+  }
   np->sz = p->sz;
 
   // copy saved user registers.
@@ -449,7 +448,7 @@ wait(uint64 addr)
         if(pp->state == ZOMBIE){
           // Found one.
           pid = pp->pid;
-          if(addr != 0 && copyout_phy(addr, (char *)&pp->xstate,
+          if(addr != 0 && copyout(p->pagetable, addr, (char *)&pp->xstate,
                                   sizeof(pp->xstate)) < 0) {
             release(&pp->lock);
             release(&wait_lock);
@@ -671,9 +670,10 @@ either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 {
   struct proc *p = myproc();
   if(user_dst){
-    //return copyout(p->pagetable, dst, src, len);
-    memmove((char *)AS_START(p->asid), src, len);
+    ASSERT_VIRTUAL((uint64)dst)
+    return copyout(p->pagetable, dst, src, len);
   } else {
+    ASSERT_PHYSICAL((uint64)dst)
     memmove((char *)dst, src, len);
   }
   return 0;
@@ -685,13 +685,12 @@ either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 int
 either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 {
-  //TODO can src sometimes be a virtual user address? -> is user src properly set?
-  //from  either_copyin -> consolewrite -> filewrite -> sys_write -> syscall comes a physical adress 
-  ASSERT_PHYSICAL(src)
-  //struct proc *p = myproc();
+  struct proc *p = myproc();
   if(user_src){
-    return copyin_phy(dst, src, len);
+    ASSERT_VIRTUAL((uint64)src)
+    return copyin(p->pagetable, dst, src, len);
   } else {
+    ASSERT_PHYSICAL(src)
     memmove(dst, (char*)src, len);
     return 0;
   }

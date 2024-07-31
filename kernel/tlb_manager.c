@@ -6,9 +6,8 @@
 
 #define SATP2ASID(satp) ((satp << 4) >> 48)
 
-//Can the symbol be retrieved? How does that even work?
 extern char trampoline[];
-uint64 get_mapping(vaddr addr, uint16 asid) {
+paddr get_mapping(vaddr addr, uint16 asid) {
   //Special case for testing deceased meat
    
   if(PGROUNDDOWN(addr) == 0x84fff000) {

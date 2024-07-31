@@ -5,6 +5,8 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
+#include "spinlock.h"
+#include "proc.h"
 
 /*
  * the kernel's page table.
@@ -100,6 +102,7 @@ kvminithart()
 pte_t *
 walk(pagetable_t pagetable, uint64 va, int alloc)
 {
+  panic("Called vm.c:walk() - should not be used anymore!\n");
   if(va >= MAXVA)
     panic("walk");
 
@@ -121,23 +124,30 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
 // Look up a virtual address, return the physical address,
 // or 0 if not mapped.
 // Can only be used to look up user pages.
+//TODO Change interface away from pagetables
 uint64
 walkaddr(pagetable_t pagetable, uint64 va)
 {
-  pte_t *pte;
-  uint64 pa;
+  ASSERT_VIRTUAL(va)
 
-  if(va >= MAXVA)
-    return 0;
+  (void)pagetable;
+  struct proc *p = myproc();
 
-  pte = walk(pagetable, va, 0);
-  if(pte == 0)
-    return 0;
-  if((*pte & PTE_V) == 0)
-    return 0;
-  if((*pte & PTE_U) == 0)
-    return 0;
-  pa = PTE2PA(*pte);
+  paddr pa = get_mapping(va, p->asid);
+  // pte_t *pte;
+  // uint64 pa;
+
+  // if(va >= MAXVA)
+  //   return 0;
+
+  // pte = walk(pagetable, va, 0);
+  // if(pte == 0)
+  //   return 0;
+  // if((*pte & PTE_V) == 0)
+  //   return 0;
+  // if((*pte & PTE_U) == 0)
+  //   return 0;
+  // pa = PTE2PA(*pte);
   return pa;
 }
 
@@ -232,51 +242,57 @@ uvmcreate(struct proc *p)
 // for the very first process.
 // sz must be less than a page.
 void
-uvmfirst(pagetable_t pagetable, uchar *src, uint sz)
+uvmfirst(struct proc *p, uchar *src, uint size)
 {
-  //TODO Instant panic to identify where vm code is called
-  panic("uvmfirst");
-  char *mem;
-
-  if(sz >= PGSIZE)
+  if(size >= PGSIZE)
     panic("uvmfirst: more than a page");
-    //TODO PROCID
-  mem = kalloc();
+
+  uint16 asid = p->asid;
+  uint64 addr = AS_START(asid);
+  char *mem = (char*) addr;
   memset(mem, 0, PGSIZE);
-  mappages(pagetable, 0, PGSIZE, (uint64)mem, PTE_W|PTE_R|PTE_X|PTE_U);
-  memmove(mem, src, sz);
+  memmove(mem, src, size);
 }
 
 // Allocate PTEs and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
+//NEW DEF
+//Simply check if the proc has enough space for newsz
+//TODO change interface, remove unused variables
 uint64
-uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm, int sbrk)
+uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm)
 {
-  //TODO Instant panic to identify where vm code is called
-  panic("uvmalloc");
-  char *mem;
-  uint64 a;
+  (void)pagetable;
+  (void)xperm;
+  // char *mem;
+  // uint64 a;
 
   if(newsz < oldsz)
     return oldsz;
+  
+  newsz = PGROUNDUP(newsz);
 
-  oldsz = PGROUNDUP(oldsz);
-  for(a = oldsz; a < newsz; a += PGSIZE){
-    //TODO PROCID
+  //TODO minus space required for trampoline and stack on top of AS?
+  if(newsz < MAX_AS_MEM)
+    return newsz;
 
-    mem = kalloc();
-    if(mem == 0){
-      uvmdealloc(pagetable, a, oldsz);
-      return 0;
-    }
-    memset(mem, 0, PGSIZE);
-    if(mappages(pagetable, a, PGSIZE, (uint64)mem, PTE_R|PTE_U|xperm) != 0){
-      kfree(mem);
-      uvmdealloc(pagetable, a, oldsz);
-      return 0;
-    }
-  }
-  return newsz;
+  // oldsz = PGROUNDUP(oldsz);
+  // for(a = oldsz; a < newsz; a += PGSIZE){
+  //   //TODO PROCID
+
+  //   mem = kalloc();
+  //   if(mem == 0){
+  //     uvmdealloc(pagetable, a, oldsz);
+  //     return 0;
+  //   }
+  //   memset(mem, 0, PGSIZE);
+  //   if(mappages(pagetable, a, PGSIZE, (uint64)mem, PTE_R|PTE_U|xperm) != 0){
+  //     kfree(mem);
+  //     uvmdealloc(pagetable, a, oldsz);
+  //     return 0;
+  //   }
+  // }
+  return 0;
 }
 
 // Deallocate user pages to bring the process size from oldsz to
@@ -286,15 +302,15 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm, int sbrk)
 uint64
 uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 {
-  //TODO Instant panic to identify where vm code is called
-  panic("uvmdealloc");
+  (void) pagetable;
   if(newsz >= oldsz)
     return oldsz;
 
-  if(PGROUNDUP(newsz) < PGROUNDUP(oldsz)){
-    int npages = (PGROUNDUP(oldsz) - PGROUNDUP(newsz)) / PGSIZE;
-    uvmunmap(pagetable, PGROUNDUP(newsz), npages, 1);
-  }
+  //No explicit freeing - memory still belongs to process
+  // if(PGROUNDUP(newsz) < PGROUNDUP(oldsz)){
+  //   int npages = (PGROUNDUP(oldsz) - PGROUNDUP(newsz)) / PGSIZE;
+  //   uvmunmap(pagetable, PGROUNDUP(newsz), npages, 1);
+  // }
 
   return newsz;
 }
@@ -340,61 +356,64 @@ uvmfree(pagetable_t pagetable, uint64 sz)
 // returns 0 on success, -1 on failure.
 // frees any allocated pages on failure.
 int
-uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
+uvmcopy(struct proc *source_proc, struct proc *new_proc, uint64 sz)
 {
-  //TODO Instant panic to identify where vm code is called
-  panic("uvmcopy");
-  pte_t *pte;
-  uint64 pa, i;
-  uint flags;
-  char *mem;
 
-  for(i = 0; i < sz; i += PGSIZE){
-    if((pte = walk(old, i, 0)) == 0)
-      panic("uvmcopy: pte should exist");
-    if((*pte & PTE_V) == 0)
-      panic("uvmcopy: page not present");
-    pa = PTE2PA(*pte);
-    flags = PTE_FLAGS(*pte);
-        //TODO PROCID
-    if((mem = kalloc()) == 0)
-      goto err;
-    memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){
-      kfree(mem);
-      goto err;
-    }
-  }
+  memmove((void *)AS_START(new_proc->asid), (void *)AS_START(source_proc->asid), sz);
+  // pte_t *pte;
+  // uint64 pa, i;
+  // uint flags;
+  // char *mem;
+
+  // for(i = 0; i < sz; i += PGSIZE){
+  //   if((pte = walk(old, i, 0)) == 0)
+  //     panic("uvmcopy: pte should exist");
+  //   if((*pte & PTE_V) == 0)
+  //     panic("uvmcopy: page not present");
+  //   pa = PTE2PA(*pte);
+  //   flags = PTE_FLAGS(*pte);
+  //       //TODO PROCID
+  //   if((mem = kalloc()) == 0)
+  //     goto err;
+  //   memmove(mem, (char*)pa, PGSIZE);
+  //   if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){
+  //     kfree(mem);
+  //     goto err;
+  //   }
+  // }
   return 0;
 
- err:
-  uvmunmap(new, 0, i / PGSIZE, 1);
-  return -1;
+//  err:
+//   uvmunmap(new, 0, i / PGSIZE, 1);
+//   return -1;
 }
 
 // mark a PTE invalid for user access.
 // used by exec for the user stack guard page.
+//NEW DEF: Address space of proc is fixed from the beginning, no need to free space
 void
 uvmclear(pagetable_t pagetable, uint64 va)
 {
+  (void)pagetable;
+  (void)va;
   //TODO Instant panic to identify where vm code is called
-  panic("uvmclear");
-  pte_t *pte;
+  // panic("uvmclear");
+  // pte_t *pte;
   
-  pte = walk(pagetable, va, 0);
-  if(pte == 0)
-    panic("uvmclear");
-  *pte &= ~PTE_U;
+  // pte = walk(pagetable, va, 0);
+  // if(pte == 0)
+  //   panic("uvmclear");
+  // *pte &= ~PTE_U;
 }
 
 // Copy from kernel to user.
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
+//TODO fit interface, remove unecesarry stuff -> walkaddr does not use the pt anymore!
 int
 copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 {
-  //TODO Instant panic to identify where vm code is called
-  panic("copyout");
+  ASSERT_VIRTUAL(dstva);
   uint64 n, va0, pa0;
 
   while(len > 0){
@@ -420,6 +439,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 int
 copyout_phy(uint64 dstpa, char *src, uint64 len)
 {
+  panic("copyout_phy()");
   ASSERT_PHYSICAL(dstpa);
   memmove((void *)dstpa, src, len);
   return 0;
@@ -432,7 +452,7 @@ int
 copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
   //TODO Instant panic to identify where vm code is called
-  panic("copyin");
+  ASSERT_VIRTUAL(srcva)
   uint64 n, va0, pa0;
 
   while(len > 0){
@@ -455,6 +475,7 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 int
 copyin_phy(char *dst, uint64 srcpa, uint64 len)
 {
+  panic("copyin_phy()");
   memmove(dst, (void *)srcpa, len);
   return 0;
 }
@@ -465,18 +486,21 @@ copyin_phy(char *dst, uint64 srcpa, uint64 len)
 //TODO do not need to go page by page, but need to check AS size
 
 int
-copyinstr_phy(char *dst, paddr srcpa, uint64 max)
+copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 {
-  ASSERT_PHYSICAL(srcpa)
-  uint64 n, pa0;
+  uint64 n, va0, pa0;
   int got_null = 0;
 
   while(got_null == 0 && max > 0){
-    pa0 = PGROUNDDOWN(srcpa);
-    n = PGSIZE - (srcpa - pa0);
+    va0 = PGROUNDDOWN(srcva);
+    pa0 = walkaddr(pagetable, va0);
+    if(pa0 == 0)
+      return -1;
+    n = PGSIZE - (srcva - va0);
     if(n > max)
       n = max;
-    char *p = (char *) (pa0 + (srcpa - pa0));
+
+    char *p = (char *) (pa0 + (srcva - va0));
     while(n > 0){
       if(*p == '\0'){
         *dst = '\0';
@@ -491,7 +515,7 @@ copyinstr_phy(char *dst, paddr srcpa, uint64 max)
       dst++;
     }
 
-    srcpa = pa0 + PGSIZE;
+    srcva = va0 + PGSIZE;
   }
   if(got_null){
     return 0;

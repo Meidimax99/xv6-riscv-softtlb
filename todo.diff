@@ -1,0 +1,189 @@
+
+
+
+
+
+
+
+
+
+--- a/kernel/kalloc.c
++++ b/kernel/kalloc.c
+
+@@ -31,6 +27,19 @@ struct {
+   struct run *freelist;
+ } kmem;
+ 
++//#0 is conceptually for the kernel but not used
++int address_spaces[NPROC+1];
++
++//fake ptes for gdb debugging
++uint64 *as_pte[NPROC+1];
++
++void write_ptes() {
++  for(int i = 1; i < NPROC+1 ; ++i) {
++    as_pte[i] =( uint64*)kalloc();
++    as_pte[i][0] = (AS_START(i) >> 2) | PTE_V | PTE_X | PTE_W | PTE_R | PTE_U;
++  }
++}
++
+
+
+--- a/kernel/printf.c
++++ b/kernel/printf.c
+@@ -67,8 +67,8 @@ printf(char *fmt, ...)
+   int i, c, locking;
+   char *s;
+ 
+-  locking = pr.locking;
+-  if(locking)
++  locking = 0;
++  if(locking) 
+     acquire(&pr.lock);
+ 
+   if (fmt == 0)
+diff --git a/kernel/proc.c b/kernel/proc.c
+index bd175d5..913bb57 100644
+
+
+
+
+
+
+
+
+
+--- a/kernel/syscall.c
++++ b/kernel/syscall.c
+
+@@ -65,7 +65,8 @@ argint(int n, int *ip)
+ void
+ argaddr(int n, uint64 *ip)
+ {
+-  *ip = argraw(n);
++  struct proc *p = myproc();
++  *ip = AS_START(p->asid) + argraw(n);
+ }
+
+
+
+
+
+--- a/kernel/tlb_manager.c
++++ b/kernel/tlb_manager.c
+@@ -1,37 +1,59 @@
+ #include "defs.h"
++#include "param.h"
+ #include "types.h"
+ #include "riscv.h"
++#include "memlayout.h"
+ 
+-#define SATP2PA(satp) ((satp << 12) & ~(0xffull << 44))
+-pte_t *
+-walk_pt(uint64 satp, uint64 va)
+-{
+-  uint64 *pt = (uint64*)SATP2PA(satp);
+-  if(va >= MAXVA)
+-    panic("walk");
+-  for(int level = 2; level > 0; level--) {
+-    pte_t *pte = &pt[PX(level, va)];
+-    if(*pte & PTE_V) {
+-      pt = (uint64*)PTE2PA(*pte);
+-    } else {
+-      return 0;
++#define SATP2ASID(satp) ((satp << 4) >> 48)
++
++//Can the symbol be retrieved? How does that even work?
++extern char trampoline[];
++uint64 get_mapping(vaddr addr, uint16 asid) {
++  //Special case for testing deceased meat
++   
++  if(PGROUNDDOWN(addr) == 0x84fff000) {
++    return 0x85000000;
++  }
++  //special case for trampoline, which is in every address space at the same address
++  // (except for the physical one!)
++  if(PGROUNDDOWN(addr) == TRAMPOLINE) {
++    return (uint64)trampoline;
++  }
++  if(asid == 0) {
++    //Kernel -> direkt mapping
++    //TODO special mappings
++    return addr;
++  } else {
++    //mappings for processes
++    //TODO trapframe and trampoline mappings
++    if(PGROUNDDOWN(addr) == TRAPFRAME) {
++      return TRAPFRAME_FROM_ASID(asid);
++    }
++
++    //Base case 
++    uint64 vpage = PGROUNDDOWN(addr);
++    if(vpage >= MAX_AS_MEM - (0x1000 * 4)) {
++      //Error, address out of range
++      panic("tlb_manager: address to high!");
+     }
++    return AS_START(asid) + vpage;
+   }
+-  return &pt[PX(0, va)];
++  return 0;
+ }
+ 
+-void tlb_handle_miss(uint64 addr, uint64 satp) {
++void tlb_handle_miss(vaddr addr, uint64 satp) {
+   w_tp(r_mhartid()); //fix problems with locks based on cpuid()
+-  //struct proc *p = myproc();
+-  //pagetable_t pt =  MAKE_PT(satp);
+-  //TODO should the tlb miss handler be able to allocate? Probably not -> Page Handlers job
+-  pte_t *pte = walk_pt(satp, addr);
+-  if(pte == 0) {
+-    //TODO no mapping available -> trigger page fault
+-  }
+-  //TODO Verify valid flag
++
++  //TODO Locks!
++  //TODO buffering printer, only prints completed lines
++  //uint16 mmuid = addr & 0xfff;
++  vaddr addr_no_mmuid = addr & ~0xfff;
++  //printf("tlb_manager: addr=%p satp=%p mmuid=%d\n", addr_no_mmuid, satp, mmuid);
++  paddr pa = get_mapping(addr_no_mmuid, SATP2ASID(satp));
++
+   w_tlbh(addr);
+-  uint16 prot =  PTE_R | PTE_W | PTE_U | PTE_V;
+-  w_tlbl(*pte | prot);
++  //TODO all access rights for now
++  uint16 prot =  PTE_R | PTE_W | PTE_X | PTE_V | ((SATP2ASID(satp) != 0) ? PTE_U : 0);
++  w_tlbl(PA2PTE(pa) | prot);
+   return;
+ }
+diff --git a/kernel/trap.c b/kernel/trap.c
+index a23be88..098f440 100644
+
+
+
+
+
+
+
+
+
+
+--- a/kernel/trap.c
++++ b/kernel/trap.c
+@@ -160,7 +160,7 @@ usertrapret(void)
+   w_sepc(p->trapframe->epc);
+ 
+   // tell trampoline.S the user page table to switch to.
+-  uint64 satp = MAKE_SATP(p->pagetable);
++  uint64 satp = ASID_SATP((uint64)p->asid)  | MAKE_SATP(p->pagetable);
+ 
+   // jump to userret in trampoline.S at the top of memory, which 
+   // switches to the user page table, restores user registers,
+diff --git a/kernel/types.h b/kernel/types.h
+index fc2981a..984d03c 100644
+
+
+
+----------------------------------------------------------------------------------------------------------
+
+

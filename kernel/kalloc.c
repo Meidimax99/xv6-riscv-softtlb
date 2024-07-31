@@ -116,7 +116,7 @@ kinit()
   initAddressSpaces();
   printinfo();
   initlock(&kmem.lock, "kmem");
-  freerange(end, (void*)(KERNEL_MEM_END)); //TODO undo change -> just for testing
+  freerange(end, (void*)(KERNEL_MEM_END));
   uint32 beef= 0xDEADBEEF;
   memsetStr((char*)0x85000000, (char*) &beef, 4, PGSIZE); // fill with junk
   write_ptes();
