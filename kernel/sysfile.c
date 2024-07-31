@@ -440,7 +440,7 @@ sys_exec(void)
   int i;
   uint64 uargv, uarg;
 
-  struct proc *p = myproc();
+  //struct proc *p = myproc();
 
   argaddr(1, &uargv);
   if(argstr(0, path, MAXPATH) < 0) {

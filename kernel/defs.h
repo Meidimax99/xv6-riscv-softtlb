@@ -168,7 +168,7 @@ void            kvminithart(void);
 void            kvmmap(pagetable_t, uint64, uint64, uint64, int);
 int             mappages(pagetable_t, uint64, uint64, uint64, int);
 pagetable_t     uvmcreate(struct proc *p);
-void            uvmfirst(pagetable_t, uchar *, uint);
+void            uvmfirst(struct proc *p, uchar *, uint);
 uint64          uvmalloc(pagetable_t, uint64, uint64, int);
 uint64          uvmdealloc(pagetable_t, uint64, uint64);
 int             uvmcopy(struct proc *source_proc, struct proc *new_proc, uint64 sz);

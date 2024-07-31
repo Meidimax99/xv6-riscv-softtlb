@@ -30,7 +30,7 @@ exec(char *path, char **argv)
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
-  pagetable_t pagetable = 0, oldpagetable;
+  pagetable_t pagetable = 0 /*,oldpagetable*/;
   struct proc *p = myproc();
 
   begin_op();
@@ -76,7 +76,7 @@ exec(char *path, char **argv)
   ip = 0;
 
   p = myproc();
-  uint64 oldsz = p->sz;
+  //uint64 oldsz = p->sz;
 
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible as a stack guard.
@@ -125,7 +125,7 @@ exec(char *path, char **argv)
     
   // Commit to the user image.
   //TODO has no effect
-  oldpagetable = p->pagetable;
+  //oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
   p->trapframe->epc = elf.entry;  // initial program counter = main
