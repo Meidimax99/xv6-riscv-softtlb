@@ -66,6 +66,7 @@
 
 extern char end[];
 //TODO better place for these macros?
+typedef uint64 vaddr;
 
 #define MAX_AS_MEM ((((PHYSTOP - (PGROUNDUP((uint64)end))) / (NPROC + 1)) >> 12 )<< 12)
 #define AS_START(asid) (PGROUNDUP((uint64)end) + ((asid) * MAX_AS_MEM))

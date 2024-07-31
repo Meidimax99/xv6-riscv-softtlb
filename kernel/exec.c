@@ -8,7 +8,7 @@
 #include "elf.h"
 
 //static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
-static int loadseg_phys(uint64 pa, struct inode *ip, uint offset, uint sz);
+static int loadseg_phys(paddr pa, struct inode *ip, uint offset, uint sz);
 
 
 int flags2perm(int flags)
@@ -170,6 +170,7 @@ exec(char *path, char **argv)
 static int
 loadseg_phys(uint64 pa, struct inode *ip, uint offset, uint sz)
 {
+  ASSERT_PHYSICAL(pa)
   uint i, n;
 
   for(i = 0; i < sz; i += PGSIZE){
