@@ -28,13 +28,13 @@ struct {
 } kmem;
 
 //#0 is conceptually for the kernel but not used
-int address_spaces[NPROC+1];
+int address_spaces[NAS+1];
 
 //fake ptes for gdb debugging
-uint64 *as_pte[NPROC+1];
+uint64 *as_pte[NAS+1];
 
 void write_ptes() {
-  for(int i = 1; i < NPROC+1 ; ++i) {
+  for(int i = 1; i < NAS+1 ; ++i) {
     as_pte[i] =( uint64*)kalloc();
     as_pte[i][0] = (AS_START(i) >> 2) | PTE_V | PTE_X | PTE_W | PTE_R | PTE_U;
   }
@@ -64,7 +64,7 @@ char maxPrefix(uint64 *num) {
 }
 void printinfo() {
   printf("address ranges:\n\n");
-  for(int i = 0; i < NPROC+1; i++) {
+  for(int i = 0; i < NAS+1; i++) {
     uint64 mem_start = AS_START(i);
     uint64 mem_end = AS_END(i);
     uint64 npages = (mem_end - mem_start) >> 12;
@@ -85,28 +85,33 @@ void printinfo() {
   }
 }
 
+//This should probably go in vm.c?
 void initAddressSpaces(void) {
-  for(int i = 0; i < NPROC+1; i++) {
+  for(int i = 0; i < NAS+1; i++) {
     address_spaces[i] = 0;
   }
 }
 //TODO LOCKING
 int getAddressSpace(int pid) {
-  for(int i = 1; i < NPROC+1; i++) {
+  for(int i = 1; i < NAS+1; i++) {
     if(address_spaces[i] == 0) {
       address_spaces[i] = pid;
+      printf("Process pid=%x acquired Address Space asid=%x\n", pid,i);
       return i;
     }
   }
-  return -1;
+  printf("Process pid=%x tried to acquire an Address Space, but none left.\n", pid);
+  return 0;
 }
 //TODO LOCKING
-
+//TODO capabilities
 int freeAddressSpace(int pid, int asid) {
   if(asid != 0 && address_spaces[asid] == pid) {
     address_spaces[asid] = 0;
+    printf("Process pid=%x released Address Space asid=%x\n", pid,asid);
     return 0;
   }
+  printf("Process pid=%x tried to release Address Space asid=%x but did not own it\n", pid, asid);
   return -1;
 }
 

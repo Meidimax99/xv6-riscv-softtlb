@@ -51,6 +51,12 @@ forktest(void)
 int
 main(void)
 {
-  forktest();
+  int pid = 0;
+  for(int i = 0; i < 3; ++i) {
+    pid = fork();
+    printf("%d\n",pid);
+  }
+  
+  //forktest();
   exit(0);
 }

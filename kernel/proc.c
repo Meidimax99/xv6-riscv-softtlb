@@ -142,7 +142,7 @@ found:
 
   // An empty user page table.
   p->asid = getAddressSpace(p->pid);
-  if(p->asid == -1){
+  if(p->asid == 0){
     freeproc(p);
     release(&p->lock);
     return 0;
@@ -169,14 +169,14 @@ found:
 static void
 freeproc(struct proc *p)
 {
-  if(p->trapframe)
-    kfree((void*)p->trapframe);
+  //if(p->trapframe)
+    //kfree((void*)p->trapframe);
   p->trapframe = 0;
   //if(p->pagetable)
     //proc_freepagetable(p->pagetable, p->sz);
-  if(p->asid <= 0)
+  if(p->asid > 0)
     freeAddressSpace(p->pid, p->asid);
-  p->pagetable = 0;
+  //p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
   p->parent = 0;
