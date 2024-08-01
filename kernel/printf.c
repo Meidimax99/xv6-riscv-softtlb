@@ -67,7 +67,7 @@ printf(char *fmt, ...)
   int i, c, locking;
   char *s;
 
-  locking = 0;
+  locking = pr.locking;
   if(locking) 
     acquire(&pr.lock);
 

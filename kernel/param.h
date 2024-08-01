@@ -1,5 +1,5 @@
 #define NPROC        64  // maximum number of processes
-#define NAS           4
+#define NAS           16 // maximum number of address spaces
 #define NCPU          8  // maximum number of CPUs
 #define NOFILE       16  // open files per process
 #define NFILE       100  // open files per system

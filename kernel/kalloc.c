@@ -85,6 +85,8 @@ void printinfo() {
   }
 }
 
+struct spinlock aslock;
+
 //This should probably go in vm.c?
 void initAddressSpaces(void) {
   for(int i = 0; i < NAS+1; i++) {
@@ -94,11 +96,14 @@ void initAddressSpaces(void) {
 //TODO LOCKING
 int getAddressSpace(int pid) {
   for(int i = 1; i < NAS+1; i++) {
+    acquire(&aslock);
     if(address_spaces[i] == 0) {
       address_spaces[i] = pid;
       printf("Process pid=%x acquired Address Space asid=%x\n", pid,i);
+      release(&aslock);
       return i;
     }
+    release(&aslock);
   }
   printf("Process pid=%x tried to acquire an Address Space, but none left.\n", pid);
   return 0;
@@ -106,11 +111,14 @@ int getAddressSpace(int pid) {
 //TODO LOCKING
 //TODO capabilities
 int freeAddressSpace(int pid, int asid) {
+  acquire(&aslock);
   if(asid != 0 && address_spaces[asid] == pid) {
     address_spaces[asid] = 0;
     printf("Process pid=%x released Address Space asid=%x\n", pid,asid);
+    release(&aslock);
     return 0;
   }
+  release(&aslock);
   printf("Process pid=%x tried to release Address Space asid=%x but did not own it\n", pid, asid);
   return -1;
 }
@@ -118,6 +126,7 @@ int freeAddressSpace(int pid, int asid) {
 void
 kinit()
 { 
+  initlock(&aslock, "aslock");
   initAddressSpaces();
   printinfo();
   initlock(&kmem.lock, "kmem");
