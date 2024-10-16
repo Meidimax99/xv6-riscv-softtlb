@@ -1,11 +1,10 @@
-xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
-Version 6 (v6).  xv6 loosely follows the structure and style of v6,
-but is implemented for a modern RISC-V multiprocessor using ANSI C.
+# xv6 with a Software-Managed TLB
 
-This fork of https://github.com/mit-pdos/xv6-riscv aims to remove the original virtual memory system and adds a completely
-software-controlled TLB Refill mechanism.
+This fork of the original [xv6 riscv](https://github.com/mit-pdos/xv6-riscv) implementation completely changes the Virtual Memory System to be software-managed. Conventional RISC-V Virtual Memory Systems rely on hardware to perform the time-critical path of walking the page table tree to create find virtual-to-physical mappings.
+This project experiments with doing just that on software side, similar to L4/MIPS. This promises a lot more flexibility on the software side of things.
+As with L4/MIPS, this project manages virtual memory by throwing an exception whenever the TLB misses, and by providing instructions to fill the TLB.
+RISC-V does not natively support any of those two requirements, thus xv6 has to be run on a custom modification of the QEMU emulator, which can be found [here](https://github.com/Meidimax99/qemu).
 
-Using the software-controlled TLB refill requires a RISC-V Emulator that throws
-and exception on TLB-Miss instead of emulating the MMUs page table walk.
-This fork of the qemu Emulator will do just that:
-https://github.com/Meidimax99/qemu
+Details of the both the modifications to xv6 and to QEMU can be found in the accompanying [bachelor's thesis](https://github.com/Meidimax99/bachelors_thesis).
+
+
